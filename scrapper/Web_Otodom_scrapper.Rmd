@@ -1,0 +1,277 @@
+---
+title: "Web_Otodom_Scrapper"
+author: "Antoniuk Davyd"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Otodom scrapper
+
+```{r message=FALSE, warning=FALSE}
+library(rvest)
+library(dplyr)
+library(stringr)
+```
+
+```{r}
+# Base URL
+base_url <- "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/lubelskie/lublin/lublin/lublin?viewType=listing&page="
+
+# Regions vector
+regions <- c("Abramowice", "Bronowice", "Czechów Południowy", "Czechów Północny", "Czuby Południowe", "Czuby Północne", 
+             "Dziesiąta", "Felin", "Głusk", "Hajdów-Zadębie", "Kalinowszczyzna", "Konstantynów", "Kośminek", 
+             "Ponikwoda", "Rury", "Sławin", "Sławinek", "Stare Miasto", "Szerokie", "Śródmieście", "Tatary", 
+             "Węglin Południowy", "Węglin Północny", "Wieniawa", "Wrotków", "Za Cukrownią", "Zemborzyce")
+
+# Initialize empty lists to store data
+all_prices <- c()
+all_names <- c()
+all_rooms <- c()
+all_areas <- c()
+all_floors <- c()
+all_regions <- c()
+all_years <- c()
+all_elevators <- c()
+```
+
+```{r}
+# Function to get year and elevator details
+get_subpage_details <- function(subpage_url) {
+  tryCatch(
+    {
+      dom_page <- read_html(subpage_url)
+      
+      # Year of Building
+      rok_budowy <- dom_page %>%
+        html_node(xpath = "//p[contains(text(), 'Rok budowy')]/following-sibling::p") %>%
+        html_text(trim = TRUE) %>%
+        coalesce("")
+      
+      # Elevator Availability
+      winda <- dom_page %>%
+        html_node(xpath = "//p[contains(text(), 'Winda')]/following-sibling::p") %>%
+        html_text(trim = TRUE) %>%
+        coalesce("")
+      
+      if (rok_budowy == "") rok_budowy <- "brak informacji"
+      if (winda == "") winda <- "brak informacji"
+      
+      return(list(rok_budowy = rok_budowy, winda = winda))
+    },
+    error = function(e) {
+      cat("Error in get_subpage_details for", subpage_url, "\n")
+      return(list(rok_budowy = "brak informacji", winda = "brak informacji"))
+    }
+  )
+}
+```
+
+```{r}
+# Loop through multiple pages
+for (page_num in 1:108) { # Change the range to cover more pages
+  link <- paste0(base_url, page_num)
+  page <- read_html(link)
+  
+  # Extract subpage links
+  subpage_links <- page %>%
+    html_nodes('a[data-cy="listing-item-link"]') %>%
+    html_attr("href") %>%
+    paste0("https://www.otodom.pl", .)
+  
+  # Extract all blocks
+  blocks <- page %>%
+    html_nodes("div.css-13gthep.ex9zd8y2")
+  
+  # Loop through each block
+  for (i in seq_along(blocks)) {
+    block <- blocks[[i]]
+    
+    # Price
+    price <- block %>%
+      html_node("span.css-2bt9f1.evk7nst0") %>%
+      html_text(trim = TRUE) %>%
+      coalesce("")
+    
+    # Name
+    name <- block %>%
+      html_node("p.css-u3orbr.e1g5xnx10") %>%
+      html_text(trim = TRUE) %>%
+      coalesce("")
+    
+    # Rooms
+    room <- block %>%
+      html_node(xpath = ".//dt[text()='Liczba pokoi']/following-sibling::dd[1]") %>%
+      html_text(trim = TRUE) %>%
+      coalesce("")
+    
+    # Area
+    area <- block %>%
+      html_node(xpath = ".//dt[text()='Powierzchnia']/following-sibling::dd[1]") %>%
+      html_text(trim = TRUE) %>%
+      coalesce("")
+    
+    # Floor
+    floor <- block %>%
+      html_node(xpath = ".//dt[text()='Piętro']/following-sibling::dd[1]") %>%
+      html_text(trim = TRUE) %>%
+      coalesce("")
+    
+    # Region
+    location <- block %>%
+      html_node("div.css-12h460e.ex9zd8y4 p.css-42r2ms.eejmx80") %>%
+      html_text(trim = TRUE) %>%
+      coalesce("")
+    
+    # Match region
+    region <- str_extract(location, paste0(regions, collapse = "|")) %>%
+      coalesce("")
+    
+    # Year and Elevator
+    subpage_details <- get_subpage_details(subpage_links[i])
+    
+    # Append to lists
+    all_prices <- c(all_prices, price)
+    all_names <- c(all_names, name)
+    all_rooms <- c(all_rooms, room)
+    all_areas <- c(all_areas, area)
+    all_floors <- c(all_floors, floor)
+    all_regions <- c(all_regions, region)
+    all_years <- c(all_years, subpage_details$rok_budowy)
+    all_elevators <- c(all_elevators, subpage_details$winda)
+  }
+}
+```
+
+```{r}
+# Create a data frame
+final_results <- data.frame(
+  Price = all_prices,
+  Name = all_names,
+  Rooms = all_rooms,
+  Area = all_areas,
+  Floor = all_floors,
+  Region = all_regions,
+  Year = all_years,
+  Elevator = all_elevators,
+  stringsAsFactors = FALSE
+)
+
+```
+
+```{r}
+write.csv(final_results, "houses_data.csv", row.names = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+data_otodom_lublin <- data.frame()
+link_miasta <- "https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/lubelskie/lublin/lublin/lublin?viewType=listing&page=" 
+
+for(i in 1:3)
+{  
+    link <- paste0(link_miasta, i)
+    page <- read_html(link)
+    
+    name <- page %>%
+      html_nodes('p.css-u3orbr.e1g5xnx10') %>%
+      html_text()
+    
+    block4 <- page %>% 
+      html_nodes("span.css-12dsp7a.e1clni9t1"[1]) %>% 
+      html_text()
+    
+    price <- block4[c(seq(1, length(block4), by = 4))]
+    price <- as.numeric(gsub("\\D", "", price))
+    
+    rooms <- block4[c(seq(3, length(block4), by = 4))]
+    rooms <- parse_number(rooms)
+    
+    area <- block4[c(seq(4, length(block4), by = 4))]
+    area <- area %>% 
+      str_replace_all(pattern=',',replacement = '.') %>% 
+      parse_number()
+    
+    price_m2 <- c()
+    price_m2 = price/area
+    
+    # regions <- c("Abramowice", "Bronowice", "Czechów Południowy", "Czechów Północny", "Czuby Południowe", "Czuby
+    #              Północne", "Dziesiąta", "Felin", "Głusk", "Hajdów-Zadębie", "Kalinowszczyzna", "Konstantynów",
+    #              "Kośminek", "Ponikwoda", "Rury", "Sławin", "Sławinek", "Stare Miasto", "Szerokie", "Śródmieście",
+    #              "Tatary", "Węglin Południowy", "Węglin Północny", "Wieniawa", "Wrotków", "Za Cukrownią",
+    #              "Zemborzyce")
+    # 
+    # full_adress <- page %>% 
+    #   html_nodes('.css-19dkezj.e1n06ry53') %>% 
+    #   html_text() 
+    # 
+    # region <- str_extract(full_adress, paste(regions, collapse = "|"))
+    # 
+    # subpage_links <- page %>%
+    #   html_nodes('a[data-cy="listing-item-link"]') %>%
+    #   html_attr("href") %>%
+    #   paste("https://www.otodom.pl", ., sep = "")
+    # 
+    # rok_budowy <- sapply(subpage_links, FUN=get_rok_budowy,USE.NAMES = FALSE)
+    # 
+    # rodzaj_budowy <- sapply(subpage_links, FUN=get_rodzaj_budowy,USE.NAMES = FALSE)
+    # 
+    # material_budynku <- sapply(subpage_links, FUN=get_material_budynku,USE.NAMES = FALSE)
+    # 
+    # if ((length(name) == length(price)) && (length(name) == length(price_m2)) && (length(name) == length(rooms)) &&           (length(name) == length(area)) && (length(name) == length(region)))
+    # {
+    #     dt <- data.frame(city,name, price, price_m2,
+    #                      rooms,area,region,full_adress,rok_budowy,rodzaj_budowy,material_budynku)    
+    # 
+    #     data_otodom_lublin <- bind_rows(data_otodom_lublin, dt)
+    # } 
+    # 
+    # else 
+    # {
+    #     warning("Different number of rows in vectors, skipping iteration.")
+    # }
+    
+}
+write.csv(data_otodom_lublin, "data_otodom_lublin.csv", row.names = FALSE)
+```
