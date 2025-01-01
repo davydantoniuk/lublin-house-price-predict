@@ -3,18 +3,21 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 import pandas as pd
 import joblib
+import numpy as np
+from scipy.stats import norm
 
 # Load the trained model and scaler
 model = joblib.load("../model_components/final_catboost_model.joblib")
 scaler = joblib.load("../model_components/scaler.joblib")  
 X_columns = joblib.load("../model_components/X_columns.joblib")  
+y = joblib.load("../model_components/y.joblib")
+y_pred = joblib.load("../model_components/y_pred.joblib")
 numerical_columns = ["Area", "Rooms"]  
 
 # Initialize FastAPI and templates
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
-# Define the prediction function
 def predict_house_price(model, area, elevator, rooms, floor, region, year_of_building):
     if floor == 0:
         floor_category = "parter"
@@ -58,12 +61,18 @@ def predict_house_price(model, area, elevator, rooms, floor, region, year_of_bui
     predicted_price = model.predict(input_data)
     return predicted_price[0]
 
-# Route for rendering the HTML form
+def calculate_individual_confidence_interval(y_true, y_pred, prediction, alpha=0.05):
+    residuals = y_true - y_pred
+    standard_error = np.std(residuals, ddof=1)
+    margin_of_error = norm.ppf(1 - alpha / 2) * standard_error
+    lower_bound = prediction - margin_of_error
+    upper_bound = prediction + margin_of_error
+    return lower_bound, upper_bound
+
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
-# Route for handling the form submission and returning the prediction
 @app.post("/predict/", response_class=HTMLResponse)
 async def predict(
     request: Request,
@@ -72,18 +81,26 @@ async def predict(
     rooms: int = Form(...),
     floor: int = Form(...),
     region: str = Form(...),
-    year_of_building: int = Form(...)
+    year_of_building: int = Form(...),
+    alpha: float = Form(0.05),
 ):
     if elevator not in [0, 1]:
         raise HTTPException(status_code=400, detail="Invalid value for elevator. Must be 0 or 1.")
+
     predicted_price = predict_house_price(model, area, elevator, rooms, floor, region, year_of_building)
+    lower, upper = calculate_individual_confidence_interval(y, y_pred, predicted_price, alpha)
+    confidence_level = (1 - alpha) * 100
+
     return templates.TemplateResponse("index.html", {
         "request": request,
         "predicted_price": f"{predicted_price:,.2f}",
+        "confidence_interval": f"[{lower:,.2f}, {upper:,.2f}]",
+        "confidence_level": confidence_level,
         "area": area,
         "elevator": elevator,
         "rooms": rooms,
         "floor": floor,
         "region": region,
-        "year_of_building": year_of_building
+        "year_of_building": year_of_building,
+        "alpha": alpha,
     })
