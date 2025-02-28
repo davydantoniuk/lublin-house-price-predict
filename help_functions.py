@@ -111,3 +111,35 @@ def check_normality(data, columns, alpha=0.05):
             print(f"  Fail to reject null hypothesis for D'Agostino's K² Test at alpha={alpha}")
         
         print("-" * 50)
+        
+def check_feature_importance(model, X_test, num_observations=1):
+    """
+    This function checks the feature importance of a trained model using SHAP values.
+    
+    Parameters:
+    model (sklearn model): The trained model to explain.
+    X_test (DataFrame): The test set features.
+    num_observations (int): The number of random observations to predict and explain. Default is 1.
+    
+    Returns:
+    None: Displays SHAP waterfall plots for the specified number of random observations.
+    
+    Usage:
+    check_feature_importance(rf_model2, X_test, num_observations=3)
+    """
+    for _ in range(num_observations):
+        # Select a random observation from the test set
+        random_index = np.random.randint(0, X_test.shape[0])
+        random_observation = X_test.iloc[random_index:random_index+1]
+
+        # Initialize SHAP explainer
+        explainer = shap.TreeExplainer(model)
+        
+        # Calculate SHAP values for the random observation
+        shap_values = explainer.shap_values(random_observation)
+        
+        # Plot SHAP waterfall plot for the random observation
+        shap.waterfall_plot(shap.Explanation(values=shap_values[0], 
+                                             base_values=explainer.expected_value[0],
+                                             data=random_observation.values[0],
+                                             feature_names=random_observation.columns))
