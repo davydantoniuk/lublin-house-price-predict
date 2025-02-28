@@ -143,3 +143,13 @@ def check_feature_importance(model, X_test, num_observations=1):
                                              base_values=explainer.expected_value[0],
                                              data=random_observation.values[0],
                                              feature_names=random_observation.columns))
+        
+# Function to detect outliers using IQR method
+def detect_outliers_iqr(df, column):
+    Q1 = df[column].quantile(0.25) 
+    Q3 = df[column].quantile(0.75) 
+    IQR = Q3 - Q1  
+    lower_bound = Q1 - 1.5 * IQR
+    upper_bound = Q3 + 1.5 * IQR
+    outliers = df[(df[column] < lower_bound) | (df[column] > upper_bound)]
+    return outliers
