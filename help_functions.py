@@ -153,3 +153,9 @@ def detect_outliers_iqr(df, column):
     upper_bound = Q3 + 1.5 * IQR
     outliers = df[(df[column] < lower_bound) | (df[column] > upper_bound)]
     return outliers
+
+# Function to Winsorize a series
+def winsorize_series(series, lower_quantile=0.01, upper_quantile=0.99):
+    lower_limit = series.quantile(lower_quantile)
+    upper_limit = series.quantile(upper_quantile)
+    return series.clip(lower=lower_limit, upper=upper_limit)
