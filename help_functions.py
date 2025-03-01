@@ -24,6 +24,7 @@ from catboost import CatBoostRegressor
 
 from sklearn.impute import KNNImputer
 from scipy.stats import ks_2samp
+from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import DBSCAN
 
 import torch
@@ -144,18 +145,59 @@ def check_feature_importance(model, X_test, num_observations=1):
                                              data=random_observation.values[0],
                                              feature_names=random_observation.columns))
         
-# Function to detect outliers using IQR method
+# Function to detect outliers using the IQR method
 def detect_outliers_iqr(df, column):
-    Q1 = df[column].quantile(0.25) 
-    Q3 = df[column].quantile(0.75) 
-    IQR = Q3 - Q1  
+    '''
+    Detects outliers in a column using the IQR method.
+
+    - Outliers: Values outside Q1 - 1.5*IQR and Q3 + 1.5*IQR.
+    - Returns a DataFrame with outliers.
+
+    Example:
+    outliers = detect_outliers_iqr(df, 'Price')
+    '''
+    Q1 = df[column].quantile(0.25)
+    Q3 = df[column].quantile(0.75)
+    IQR = Q3 - Q1
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
-    outliers = df[(df[column] < lower_bound) | (df[column] > upper_bound)]
-    return outliers
+    return df[(df[column] < lower_bound) | (df[column] > upper_bound)]
 
-# Function to Winsorize a series
+
+# Function to Winsorize a numeric column (cap extreme values)
 def winsorize_series(series, lower_quantile=0.01, upper_quantile=0.99):
+    '''
+    Caps extreme values at given percentiles (default 1%-99%).
+
+    - Values below/above limits are replaced with 1st/99th percentile.
+    - Prevents extreme values from skewing results.
+
+    Example:
+    df['Year'] = winsorize_series(df['Year'])
+    '''
     lower_limit = series.quantile(lower_quantile)
     upper_limit = series.quantile(upper_quantile)
     return series.clip(lower=lower_limit, upper=upper_limit)
+
+# Function to compute k-distance plot
+def get_kdist_plot(X, k):
+    '''
+    This function computes the k-distance plot for a dataset.
+    https://stackoverflow.com/questions/15050389/estimating-choosing-optimal-hyperparameters-for-dbscan/15063143#15063143
+    '''
+    nbrs = NearestNeighbors(n_neighbors=k).fit(X)
+    
+    # Compute distances to k-nearest neighbors
+    distances, indices = nbrs.kneighbors(X)
+    
+    # Sort distances for better visualization
+    distances = np.sort(distances[:, k - 1], axis=0)
+    
+    # Plot k-distance graph
+    plt.figure(figsize=(8, 6))
+    plt.plot(distances)
+    plt.xlabel('Points in the dataset', fontsize=12)
+    plt.ylabel(f'Sorted {k}-nearest neighbor distance', fontsize=12)
+    plt.title(f'K-distance plot for DBSCAN (k={k})')
+    plt.grid(True, linestyle="--", color='black', alpha=0.4)
+    plt.show()
