@@ -5,7 +5,8 @@ import warnings
 import joblib  
 import scipy.stats as stats
 from scipy.stats import norm
-
+from scipy.stats import boxcox
+from scipy.special import inv_boxcox
 
 import matplotlib.pyplot as plt 
 from mpl_toolkits.mplot3d import Axes3D  
@@ -26,6 +27,8 @@ from sklearn.impute import KNNImputer
 from scipy.stats import ks_2samp
 from sklearn.neighbors import NearestNeighbors
 from sklearn.cluster import DBSCAN
+from sklearn.linear_model import Ridge
+from sklearn.preprocessing import LabelEncoder
 
 import torch
 from torch.utils.data import DataLoader, Dataset, TensorDataset
@@ -201,3 +204,9 @@ def get_kdist_plot(X, k):
     plt.title(f'K-distance plot for DBSCAN (k={k})')
     plt.grid(True, linestyle="--", color='black', alpha=0.4)
     plt.show()
+    
+# Function to compute sample weights for categorical features
+def compute_weights(data, column):
+    counts = data[column].value_counts()
+    total_count = len(data)
+    return total_count / counts
