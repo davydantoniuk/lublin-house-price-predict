@@ -1,6 +1,7 @@
 import pandas as pd  
 import numpy as np  
 import re 
+import sys
 import warnings  
 import joblib  
 import scipy.stats as stats
@@ -9,6 +10,7 @@ from scipy.stats import boxcox
 from scipy.special import inv_boxcox
 
 import matplotlib.pyplot as plt 
+import matplotlib.gridspec as gridspec
 from mpl_toolkits.mplot3d import Axes3D  
 import seaborn as sns  
 
@@ -19,6 +21,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.linear_model import ElasticNet, LinearRegression
 from sklearn.svm import SVR
+from sklearn.ensemble import GradientBoostingRegressor
 from xgboost import XGBRegressor
 import lightgbm as lgb
 from catboost import CatBoostRegressor
@@ -210,3 +213,32 @@ def compute_weights(data, column):
     counts = data[column].value_counts()
     total_count = len(data)
     return total_count / counts
+
+# Function to compare model performance on a given metric
+def plot_metric_comparison(metric_values, metric_name):
+    """
+    Plots a bar chart comparing model performance on a given metric.
+    
+    Parameters:
+        metric_values (dict): Dictionary where keys are model names and values are metric scores.
+        metric_name (str): Name of the metric to be displayed as the plot title.
+    """
+
+    # Sort models by metric value (descending order)
+    sorted_metrics = dict(sorted(metric_values.items(), key=lambda item: item[1], reverse=True))
+
+    # Create figure and axis
+    fig, ax = plt.subplots(figsize=(6, 4))
+    
+    # Plot bar chart
+    ax.barh(list(sorted_metrics.keys()), list(sorted_metrics.values()), color='royalblue')
+    
+    # Add labels and title
+    ax.set_xlabel(metric_name)
+    ax.set_title(f"{metric_name} Comparison")
+    
+    # Show grid for readability
+    ax.grid(axis='x', linestyle='--', alpha=0.5)
+
+    # Display the plot
+    plt.show()
