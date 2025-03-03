@@ -72,7 +72,20 @@
             <input type="number" id="rooms" name="rooms" value="{{ rooms or '' }}" required>
 
             <label for="floor">Floor:</label>
-            <input type="number" id="floor" name="floor" value="{{ floor or '' }}" required>
+            <select id="floor" name="floor" required>
+                <option value="parter" {% if floor == 'parter' %}selected{% endif %}>Parter</option>
+                <option value="1 piętro" {% if floor == '1 piętro' %}selected{% endif %}>1 piętro</option>
+                <option value="2 piętro" {% if floor == '2 piętro' %}selected{% endif %}>2 piętro</option>
+                <option value="3 piętro" {% if floor == '3 piętro' %}selected{% endif %}>3 piętro</option>
+                <option value="4 piętro" {% if floor == '4 piętro' %}selected{% endif %}>4 piętro</option>
+                <option value="5 piętro" {% if floor == '5 piętro' %}selected{% endif %}>5 piętro</option>
+                <option value="6 piętro" {% if floor == '6 piętro' %}selected{% endif %}>6 piętro</option>
+                <option value="7 piętro" {% if floor == '7 piętro' %}selected{% endif %}>7 piętro</option>
+                <option value="8 piętro" {% if floor == '8 piętro' %}selected{% endif %}>8 piętro</option>
+                <option value="9 piętro" {% if floor == '9 piętro' %}selected{% endif %}>9 piętro</option>
+                <option value="10 piętro" {% if floor == '10 piętro' %}selected{% endif %}>10 piętro</option>
+                <option value="10+ piętro" {% if floor == '10+ piętro' %}selected{% endif %}>10+ piętro</option>
+            </select>
 
             <label for="region">Region:</label>
             <input type="text" id="region" name="region" list="regions" value="{{ region or '' }}" required>
