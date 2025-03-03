@@ -1,0 +1,15 @@
+catboost==1.2.7
+joblib==1.4.2
+lightgbm==4.6.0
+lime==0.2.0.1
+matplotlib==3.10.0
+numpy==1.26.4
+pandas==2.2.3
+scikit_learn==1.6.1
+scipy==1.15.2
+seaborn==0.13.2
+shap==0.46.0
+smogn==0.1.2
+statsmodels==0.14.4
+torch==2.6.0+cu118
+xgboost==2.1.4
