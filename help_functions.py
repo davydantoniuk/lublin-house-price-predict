@@ -8,6 +8,7 @@ import scipy.stats as stats
 from scipy.stats import norm
 from scipy.stats import boxcox
 from scipy.special import inv_boxcox
+import statsmodels.api as sm
 
 import matplotlib.pyplot as plt 
 import matplotlib.gridspec as gridspec
@@ -15,7 +16,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sns  
 
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.model_selection import train_test_split, GridSearchCV
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
@@ -25,6 +26,7 @@ from sklearn.ensemble import GradientBoostingRegressor
 from xgboost import XGBRegressor
 import lightgbm as lgb
 from catboost import CatBoostRegressor
+from sklearn.ensemble import StackingRegressor
 
 from sklearn.impute import KNNImputer
 from scipy.stats import ks_2samp
@@ -38,6 +40,7 @@ from torch.utils.data import DataLoader, Dataset, TensorDataset
 import torch.nn as nn
 import torch.optim as optim
 
+from smogn import smoter
 import shap  
 import lime  
 import lime.lime_tabular
@@ -242,3 +245,108 @@ def plot_metric_comparison(metric_values, metric_name):
 
     # Display the plot
     plt.show()
+    
+
+# Function to predict house price and return confidence interval
+def predict_house_price(
+    user_data, 
+    model: RandomForestRegressor, 
+    label_encoder_floor: LabelEncoder, 
+    label_encoder_region: LabelEncoder, 
+    lambda_area: float, 
+    region_weights: dict, 
+    floor_weights: dict, 
+    room_weights: dict, 
+    expected_features: list,  # Ensures correct feature order
+    significance_level=0.05
+):
+    """
+    Predicts the house price based on user input data and returns a confidence interval.
+
+    Parameters:
+    - user_data (dict): Dictionary containing 'Rooms', 'Area', 'Floor', 'Region', 'Elevator', 'Year'
+    - model (RandomForestRegressor): Pre-trained Random Forest model
+    - label_encoder_floor (LabelEncoder): Encoder for Floor feature
+    - label_encoder_region (LabelEncoder): Encoder for Region feature
+    - lambda_area (float): Box-Cox transformation lambda for Area
+    - region_weights (dict): Precomputed region weight mapping
+    - floor_weights (dict): Precomputed floor weight mapping
+    - room_weights (dict): Precomputed room weight mapping
+    - expected_features (list): The exact feature order used during model training
+    - significance_level (float): User-defined significance level (default 0.05 for 95% confidence)
+
+    Returns:
+    - predicted_price (float): Predicted price of the house
+    - confidence_interval (tuple): Lower and upper bounds of the confidence interval
+    """
+
+    # Convert user input to DataFrame
+    data = pd.DataFrame([user_data])
+
+    # Merge floors 5 and above into "5+ piętro"
+    high_floors = ['5 piętro', '6 piętro', '7 piętro', '8 piętro', '9 piętro', '10 piętro', '10+ piętro']
+    data['Floor'] = data['Floor'].replace(high_floors, '5+ piętro')
+
+    # Handle regions - replace low-frequency ones with "Other"
+    if user_data['Region'] not in region_weights:
+        data['Region'] = 'Other'
+
+    # Apply Box-Cox Transformation for Area
+    data['Area'] = boxcox(data['Area'], lambda_area)
+
+    # Label encoding for categorical features
+    data['Floor'] = label_encoder_floor.transform(data['Floor'])
+    data['Region'] = label_encoder_region.transform(data['Region'])
+
+    # Convert Elevator to binary (if not already)
+    data['Elevator'] = data['Elevator'].apply(lambda x: 1 if x in [1, 'Yes', 'yes', 'y', 'true', True] else 0)
+
+    # **Ensure correct feature order and drop unexpected features**
+    missing_features = [feature for feature in expected_features if feature not in data.columns]
+    extra_features = [feature for feature in data.columns if feature not in expected_features]
+
+    if missing_features:
+        raise ValueError(f"🚨 Missing required features: {missing_features}")
+
+    if extra_features:
+        print(f"⚠️ Warning: Ignoring unexpected features: {extra_features}")
+
+    # **Ensure correct column order & drop any extra columns**
+    data = data[expected_features]
+
+    # **Ensure correct data types**
+    data = data.astype({
+        'Area': 'float64',
+        'Elevator': 'float64',
+        'Year': 'int32',
+        'Rooms': 'float64',
+        'Floor': 'int32',
+        'Region': 'int32'
+    })
+
+    # **Check feature names and order before prediction**
+    print("Features expected by model:", list(model.feature_names_in_))
+    print("Features provided for prediction:", list(data.columns))
+
+    # **Final validation before prediction**
+    if not np.array_equal(model.feature_names_in_, data.columns.to_numpy()):
+        raise ValueError("Feature names or order do not match what was used during model training.")
+
+    # Predict house price
+    predicted_price = model.predict(data)[0]
+
+    # Get predictions from all individual trees in the Random Forest
+    tree_predictions = np.array([tree.predict(data)[0] for tree in model.estimators_])
+
+    # Compute the standard deviation of tree predictions
+    std_dev = np.std(tree_predictions)
+
+    # Compute confidence interval based on standard normal distribution
+    z_score = norm.ppf(1 - significance_level / 2)  # Two-tailed z-score for given significance level
+    margin_of_error = z_score * std_dev
+
+    # Calculate confidence interval
+    lower_bound = max(0, predicted_price - margin_of_error)  # Ensuring price is not negative
+    upper_bound = predicted_price + margin_of_error
+
+    return predicted_price, (lower_bound, upper_bound)
