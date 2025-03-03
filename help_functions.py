@@ -257,7 +257,7 @@ def predict_house_price(
     region_weights: dict, 
     floor_weights: dict, 
     room_weights: dict, 
-    expected_features: list,  # Ensures correct feature order
+    expected_features: list, 
     significance_level=0.05
 ):
     """
@@ -325,12 +325,12 @@ def predict_house_price(
     })
 
     # **Check feature names and order before prediction**
-    print("Features expected by model:", list(model.feature_names_in_))
-    print("Features provided for prediction:", list(data.columns))
+    print("✅ Features expected by model:", list(model.feature_names_in_))
+    print("✅ Features provided for prediction:", list(data.columns))
 
     # **Final validation before prediction**
     if not np.array_equal(model.feature_names_in_, data.columns.to_numpy()):
-        raise ValueError("Feature names or order do not match what was used during model training.")
+        raise ValueError("🚨 Feature names or order do not match what was used during model training.")
 
     # Predict house price
     predicted_price = model.predict(data)[0]
