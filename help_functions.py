@@ -122,7 +122,7 @@ def check_normality(data, columns, alpha=0.05):
         
         print("-" * 50)
         
-def check_feature_importance(model, X_test, num_observations=1):
+def check_feature_importance(model, X_test, num_observations=1, random_seed=None):
     """
     This function checks the feature importance of a trained model using SHAP values.
     
@@ -130,13 +130,17 @@ def check_feature_importance(model, X_test, num_observations=1):
     model (sklearn model): The trained model to explain.
     X_test (DataFrame): The test set features.
     num_observations (int): The number of random observations to predict and explain. Default is 1.
+    random_seed (int, optional): Random seed for reproducibility. Default is None.
     
     Returns:
     None: Displays SHAP waterfall plots for the specified number of random observations.
     
     Usage:
-    check_feature_importance(rf_model2, X_test, num_observations=3)
+    check_feature_importance(rf_model2, X_test, num_observations=3, random_seed=42)
     """
+    if random_seed is not None:
+        np.random.seed(random_seed)
+    
     for _ in range(num_observations):
         # Select a random observation from the test set
         random_index = np.random.randint(0, X_test.shape[0])
