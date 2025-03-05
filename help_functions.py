@@ -354,3 +354,83 @@ def predict_house_price(
     upper_bound = predicted_price + margin_of_error
 
     return predicted_price, (lower_bound, upper_bound)
+
+
+# ✅ Define parameter grid for Random Forest
+PARAM_GRID = {
+    'n_estimators': [100, 200, 300],
+    'max_depth': [10, 20, 30, None],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4],
+    'max_features': ['sqrt', 'log2']
+}
+
+
+def preprocess_data(method, X_train, X_val, X_test):
+    '''
+    Prepares the dataset based on the chosen encoding method.
+
+    Parameters:
+    - method (str): Encoding method to apply.
+        - "LE"  → Label Encoding for categorical features.
+        - "OHE" → One-Hot Encoding for categorical features.
+        - "OHE-W" → One-Hot Encoding + Sample Weighting.
+    - X_train, X_val, X_test (DataFrame): Training, validation, and test sets.
+
+    Returns:
+    - X_train (DataFrame): Processed training features.
+    - X_test (DataFrame): Processed test features.
+    - sample_weight (Series or None): Sample weights (for OHE-W) or None.
+    '''
+    X_train, X_val, X_test = X_train.copy(), X_val.copy(), X_test.copy()
+
+    # Store Floor & Rooms before encoding for weighting
+    if method == "OHE-W":
+        floor_col = X_train['Floor'].copy()
+        rooms_col = X_train['Rooms'].copy()
+
+    if method == "LE":  # Label Encoding
+        for col in ['Floor', 'Region']:
+            le = LabelEncoder()
+            X_train[col] = le.fit_transform(X_train[col])
+            X_val[col] = le.transform(X_val[col])
+            X_test[col] = le.transform(X_test[col])
+
+    elif method in ["OHE", "OHE-W"]:  # One-Hot Encoding
+        X_train, X_val, X_test = [pd.get_dummies(df, columns=['Floor', 'Region'], drop_first=True) for df in [X_train, X_val, X_test]]
+        for df in [X_val, X_test]:  
+            for col in set(X_train.columns) - set(df.columns):
+                df[col] = 0
+            df = df[X_train.columns]
+
+    if method == "OHE-W":  # Compute sample weights for weighted model
+        room_w = rooms_col.value_counts().to_dict()
+        floor_w = floor_col.value_counts().to_dict()
+        sample_weight = rooms_col.map(room_w) * floor_col.map(floor_w)
+        return X_train, X_test, sample_weight
+
+    return X_train, X_test, None  # Return data with no sample weight
+
+
+def train_evaluate(X_train, X_test, y_train, y_test, sample_weight, param_grid=PARAM_GRID):
+    '''
+    Trains a Random Forest model using Grid Search CV and evaluates performance.
+
+    Parameters:
+    - X_train (DataFrame): Training feature set.
+    - X_test (DataFrame): Test feature set.
+    - y_train (Series): Target values for training.
+    - y_test (Series): Target values for testing.
+    - sample_weight (Series or None): Sample weights for training.
+    - param_grid (dict): Hyperparameter grid for GridSearchCV.
+
+    Returns:
+    - evaluation_results (dict): Model performance metrics.
+    - best_params (dict): Best hyperparameters from Grid Search.
+    '''
+    rf = RandomForestRegressor(random_state=42)
+    grid_search = GridSearchCV(rf, param_grid, cv=5, scoring='r2', n_jobs=-1)
+    grid_search.fit(X_train, y_train, sample_weight=sample_weight)
+    best_model = grid_search.best_estimator_
+    return evaluate_model(y_test, best_model.predict(X_test)), grid_search.best_params_
+
