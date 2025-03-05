@@ -41,6 +41,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from smogn import smoter
+import smogn
 import shap  
 import lime  
 import lime.lime_tabular
@@ -177,19 +178,19 @@ def detect_outliers_iqr(df, column):
     return df[(df[column] < lower_bound) | (df[column] > upper_bound)]
 
 
-# Function to Winsorize a numeric column (cap extreme values)
+# Function to Winsorize a numeric column and return limits
 def winsorize_series(series, lower_quantile=0.01, upper_quantile=0.99):
     '''
     Caps extreme values at given percentiles (default 1%-99%), using nearest integer values.
 
     - Calculates quantiles using nearest interpolation to ensure integer limits.
     - Clips values to these integer limits to maintain the original integer dtype.
+    - Returns the transformed series and the computed limits for consistency across datasets.
     '''
     lower_limit = series.quantile(lower_quantile, interpolation='nearest')
     upper_limit = series.quantile(upper_quantile, interpolation='nearest')
     
-    # Clip values and cast back to original dtype
-    return series.clip(lower=lower_limit, upper=upper_limit).astype(series.dtype)
+    return series.clip(lower=lower_limit, upper=upper_limit).astype(series.dtype), lower_limit, upper_limit
 
 # Function to compute k-distance plot
 def get_kdist_plot(X, k):
