@@ -180,17 +180,16 @@ def detect_outliers_iqr(df, column):
 # Function to Winsorize a numeric column (cap extreme values)
 def winsorize_series(series, lower_quantile=0.01, upper_quantile=0.99):
     '''
-    Caps extreme values at given percentiles (default 1%-99%).
+    Caps extreme values at given percentiles (default 1%-99%), using nearest integer values.
 
-    - Values below/above limits are replaced with 1st/99th percentile.
-    - Prevents extreme values from skewing results.
-
-    Example:
-    df['Year'] = winsorize_series(df['Year'])
+    - Calculates quantiles using nearest interpolation to ensure integer limits.
+    - Clips values to these integer limits to maintain the original integer dtype.
     '''
-    lower_limit = series.quantile(lower_quantile)
-    upper_limit = series.quantile(upper_quantile)
-    return series.clip(lower=lower_limit, upper=upper_limit)
+    lower_limit = series.quantile(lower_quantile, interpolation='nearest')
+    upper_limit = series.quantile(upper_quantile, interpolation='nearest')
+    
+    # Clip values and cast back to original dtype
+    return series.clip(lower=lower_limit, upper=upper_limit).astype(series.dtype)
 
 # Function to compute k-distance plot
 def get_kdist_plot(X, k):
