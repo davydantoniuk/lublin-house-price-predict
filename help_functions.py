@@ -3,6 +3,7 @@ import numpy as np
 import re 
 import sys
 import warnings  
+import os
 import joblib  
 import scipy.stats as stats
 from scipy.stats import norm
@@ -15,8 +16,8 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.mplot3d import Axes3D  
 import seaborn as sns  
 
-from sklearn.preprocessing import StandardScaler, OneHotEncoder
-from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score
+from sklearn.preprocessing import StandardScaler, OneHotEncoder, MinMaxScaler
+from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score, RandomizedSearchCV
 
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.tree import DecisionTreeRegressor
@@ -329,8 +330,8 @@ def predict_house_price(
     })
 
     # **Check feature names and order before prediction**
-    print("✅ Features expected by model:", list(model.feature_names_in_))
-    print("✅ Features provided for prediction:", list(data.columns))
+    print("Features expected by model:", list(model.feature_names_in_))
+    print("Features provided for prediction:", list(data.columns))
 
     # **Final validation before prediction**
     if not np.array_equal(model.feature_names_in_, data.columns.to_numpy()):
@@ -356,7 +357,7 @@ def predict_house_price(
     return predicted_price, (lower_bound, upper_bound)
 
 
-# ✅ Define parameter grid for Random Forest
+# Define parameter grid for Random Forest
 PARAM_GRID = {
     'n_estimators': [100, 200, 300],
     'max_depth': [10, 20, 30, None],
@@ -433,4 +434,102 @@ def train_evaluate(X_train, X_test, y_train, y_test, sample_weight, param_grid=P
     grid_search.fit(X_train, y_train, sample_weight=sample_weight)
     best_model = grid_search.best_estimator_
     return evaluate_model(y_test, best_model.predict(X_test)), grid_search.best_params_
+
+# Function to prepare data for stacking model
+def prepare_data_for_stacking(X_tree, y_tree, use_combined_train_val=False, models=['rf', 'cat', 'xgb']):
+    """
+    Prepares data for stacking model by applying transformations, encoding categorical features,
+    and ensuring consistency across train and test sets.
+
+    Parameters:
+    - X_tree (pd.DataFrame): Feature dataset
+    - y_tree (pd.Series): Target variable
+    - use_combined_train_val (bool): If True, merges training and validation sets before training
+    - models (list): List of models to prepare data for (options: 'rf', 'cat', 'xgb')
+
+    Returns:
+    - Dictionary containing processed train and test datasets
+    - sample_weight_rf (Sample weights for RF model)
+    """
+    
+    # === 1. Train-Validation-Test Split ===
+    X_train, X_temp, y_train, y_temp = train_test_split(X_tree, y_tree, test_size=0.3, random_state=42)
+    X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+
+    if use_combined_train_val:
+        # Combine Training and Validation Sets
+        X_train = pd.concat([X_train, X_val], axis=0)
+        y_train = pd.concat([y_train, y_val], axis=0)
+
+    # === 2. Apply Transformations ===
+    # Box-Cox transformation
+    X_train['Area'], area_lambda = stats.boxcox(X_train['Area'])
+    X_test['Area'] = stats.boxcox(X_test['Area'], lmbda=area_lambda)
+
+    # Winsorization
+    X_train['Year'], year_lower, year_upper = winsorize_series(X_train['Year'])
+    X_test['Year'] = X_test['Year'].clip(lower=year_lower, upper=year_upper).astype(X_test['Year'].dtype)
+
+    # === 3. Prepare Data for Each Model ===
+    data_dict = {}
+    if 'rf' in models:
+        # One-Hot Encoding for RF
+        X_train_rf = pd.get_dummies(X_train.copy(), columns=['Floor', 'Region'], drop_first=True, dtype='int32')
+        X_test_rf = pd.get_dummies(X_test.copy(), columns=['Floor', 'Region'], drop_first=True, dtype='int32')
+
+        # Ensure test set has same features as training set
+        missing_cols_rf = set(X_train_rf.columns) - set(X_test_rf.columns)
+        for col in missing_cols_rf:
+            X_test_rf[col] = 0
+        X_test_rf = X_test_rf[X_train_rf.columns]
+
+        # Compute Sample Weights for RF
+        floor_columns = [col for col in X_train_rf.columns if col.startswith('Floor_')]
+        region_columns = [col for col in X_train_rf.columns if col.startswith('Region_')]
+        categorical_weight_columns = floor_columns + region_columns
+
+        weights_dict = {}
+        for col in categorical_weight_columns:
+            value_counts = X_train_rf[col].value_counts()
+            weights_dict[col] = {val: len(X_train_rf) / count for val, count in value_counts.items()}
+
+        sample_weight_rf = pd.Series(1, index=X_train_rf.index)
+        for col in categorical_weight_columns:
+            sample_weight_rf *= X_train_rf[col].map(weights_dict[col])
+
+        data_dict['X_train_rf'] = X_train_rf
+        data_dict['X_test_rf'] = X_test_rf
+        data_dict['sample_weight_rf'] = sample_weight_rf
+
+    if 'cat' in models:
+        # Label Encoding for CatBoost
+        X_train_cat, X_test_cat = X_train.copy(), X_test.copy()
+        label_encoders = {}
+        for col in ['Floor', 'Region']:
+            le = LabelEncoder()
+            X_train_cat[col] = le.fit_transform(X_train_cat[col])
+            X_test_cat[col] = le.transform(X_test_cat[col])
+            label_encoders[col] = le
+
+        data_dict['X_train_cat'] = X_train_cat
+        data_dict['X_test_cat'] = X_test_cat
+
+    if 'xgb' in models:
+        # One-Hot Encoding for XGBoost
+        X_train_xgb = pd.get_dummies(X_train.copy(), columns=['Floor', 'Region'], drop_first=True, dtype='int32')
+        X_test_xgb = pd.get_dummies(X_test.copy(), columns=['Floor', 'Region'], drop_first=True, dtype='int32')
+
+        # Ensure test set has same features as training set
+        missing_cols_xgb = set(X_train_xgb.columns) - set(X_test_xgb.columns)
+        for col in missing_cols_xgb:
+            X_test_xgb[col] = 0
+        X_test_xgb = X_test_xgb[X_train_xgb.columns]
+
+        data_dict['X_train_xgb'] = X_train_xgb
+        data_dict['X_test_xgb'] = X_test_xgb
+
+    data_dict['y_train'] = y_train
+    data_dict['y_test'] = y_test
+
+    return data_dict
 
