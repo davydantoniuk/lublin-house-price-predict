@@ -687,3 +687,55 @@ def plot_training_history(history, title="Training History"):
     plt.grid()
     plt.show()
 
+# Function to plot and compare model performance
+def plot_model_performance(r2_scores, mae_scores, rmse_scores, mape_scores, rmsle_scores):
+    models = list(r2_scores.keys())
+    cmap = plt.get_cmap('tab20')
+    model_colors = {model: cmap(i) for i, model in enumerate(models)}
+
+    fig = plt.figure(figsize=(18, 12))
+    gs = gridspec.GridSpec(2, 5, width_ratios=[1, 1, 1, 1, 1], wspace=1.2, hspace=0.4)
+
+    ax0 = plt.subplot(gs[0, 0])
+    ax1 = plt.subplot(gs[0, 1:3])
+    ax2 = plt.subplot(gs[0, 3:5])
+    ax3 = plt.subplot(gs[1, 0:2])
+    ax4 = plt.subplot(gs[1, 3:5])
+
+    axes = [ax0, ax1, ax2, ax3, ax4]
+
+    # Configure all axes
+    for ax in axes:
+        ax.tick_params(axis='y', labelsize=9)
+        ax.xaxis.set_tick_params(labelsize=8)
+
+    # Helper function to plot each metric
+    def plot_metric(ax, metric_name, metric_values):
+        sorted_metrics = dict(sorted(metric_values.items(), key=lambda item: item[1], reverse=True))
+        colors = [model_colors[model] for model in sorted_metrics.keys()]
+        
+        bars = ax.barh(list(sorted_metrics.keys()), list(sorted_metrics.values()), color=colors)
+        ax.set_title(f"{metric_name} Comparison", fontsize=11, pad=10)
+        ax.set_xlabel(metric_name, fontsize=10, labelpad=8)
+        ax.grid(axis='x', linestyle=':', alpha=0.7)
+
+        # Dynamic x-lim padding
+        xmax = max(metric_values.values())
+        ax.set_xlim(left=0, right=xmax * 1.15)
+
+    # Plot all metrics
+    metrics_data = [
+        (ax0, "R² Score", r2_scores),
+        (ax1, "MAE", mae_scores),
+        (ax2, "RMSE", rmse_scores),
+        (ax3, "MAPE", mape_scores),
+        (ax4, "RMSLE", rmsle_scores)
+    ]
+
+    for ax, name, values in metrics_data:
+        plot_metric(ax, name, values)
+
+    # Final layout adjustments
+    plt.subplots_adjust(top=0.92, bottom=0.08)
+    plt.suptitle("Model Performance Comparison", fontsize=14)
+    plt.show()
