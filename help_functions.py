@@ -739,3 +739,104 @@ def plot_model_performance(r2_scores, mae_scores, rmse_scores, mape_scores, rmsl
     plt.subplots_adjust(top=0.92, bottom=0.08)
     plt.suptitle("Model Performance Comparison", fontsize=14)
     plt.show()
+    
+# Function to plot SHAP explanations
+def plot_shap_explanations(model, X_test, model_type='cat', num_cases=4, seed=42):
+    shap.initjs()
+
+    # Fill missing values with median to handle NaNs
+    X_test = X_test.fillna(X_test.median())
+
+    # Randomly select different rows each time (use seed for reproducibility)
+    X_sample = X_test.sample(n=num_cases, random_state=seed).reset_index(drop=True)
+
+    # List to store SHAP explanations and data
+    explanations = []
+
+    # Monkey-patch to capture explanation data
+    original_waterfall_plot = shap.waterfall_plot
+
+    def capturing_plot(explanation, *args, **kwargs):
+        explanations.append({
+            'values': explanation.values,
+            'base_value': explanation.base_values,
+            'data': explanation.data,
+            'feature_names': explanation.feature_names
+        })
+        plt.close()
+
+    shap.waterfall_plot = capturing_plot
+
+    # Generate SHAP explanations
+    if model_type == 'rf':
+        explainer = shap.TreeExplainer(model.named_estimators_['rf'])
+        shap_values = explainer.shap_values(X_sample)
+    elif model_type == 'cat':
+        explainer = shap.TreeExplainer(model.named_estimators_['cat'])
+        shap_values = explainer.shap_values(X_sample)
+    else:
+        raise ValueError("Unsupported model type. Use 'rf' or 'cat'.")
+
+    # Generate explanations and capture them
+    for i in range(num_cases):
+        shap.waterfall_plot(
+            shap.Explanation(values=shap_values[i],
+                             base_values=explainer.expected_value,
+                             data=X_sample.iloc[i],
+                             feature_names=X_sample.columns),
+            show=False
+        )
+
+    # Restore original SHAP function
+    shap.waterfall_plot = original_waterfall_plot
+
+    # Configure plot parameters BEFORE creating the figure
+    plt.rcParams.update({
+        'font.size': 14,           
+        'axes.titlesize': 16,        
+        'axes.labelsize': 12,         
+        'xtick.labelsize': 10,        
+        'ytick.labelsize': 10,       
+        'figure.autolayout': False    
+    })
+
+    # Create a LARGER figure with more spacing to avoid text overlap
+    fig, axes = plt.subplots(2, 2, figsize=(30, 30), dpi=150)
+    axes = axes.flatten()
+
+    # Plot with enhanced spacing
+    for i, exp_data in enumerate(explanations[:4]):
+        exp = shap.Explanation(
+            values=exp_data['values'],
+            base_values=exp_data['base_value'],
+            data=exp_data['data'],
+            feature_names=exp_data['feature_names']
+        )
+
+        ax = axes[i]
+        plt.figure(fig.number)
+        plt.sca(ax)
+
+        # Create plot with adjusted parameters
+        shap.plots.waterfall(
+            exp,
+            show=False,
+            max_display=10  # Limit number of features displayed to avoid clutter
+        )
+
+        # Custom adjustments
+        ax.set_title(f'Case {i + 1}', pad=20, fontsize=18)
+        ax.tick_params(axis='both', which='major', labelsize=10, length=5)
+
+        # Add breathing room around the plot
+        plt.draw()
+
+    # Adjust spacing between plots
+    plt.tight_layout(pad=8)  
+    plt.subplots_adjust(
+        wspace=2,  
+        hspace=0.7   
+    )
+
+    plt.show()
+
