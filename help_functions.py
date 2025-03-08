@@ -533,3 +533,16 @@ def prepare_data_for_stacking(X_tree, y_tree, use_combined_train_val=False, mode
 
     return data_dict
 
+# Function to plot model training history
+def plot_training_history(history, title="FNN Training Progress"):
+    plt.figure(figsize=(8, 5))
+    plt.plot(history['train_loss'], label="Train Loss", color='blue')
+    plt.plot(history['val_loss'], label="Validation Loss", color='orange')
+    plt.title(title)
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.legend()
+    plt.grid()
+    plt.show()
+
+
