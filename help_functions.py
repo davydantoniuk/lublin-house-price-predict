@@ -533,8 +533,150 @@ def prepare_data_for_stacking(X_tree, y_tree, use_combined_train_val=False, mode
 
     return data_dict
 
-# Function to plot model training history
-def plot_training_history(history, title="FNN Training Progress"):
+# Create DataLoader 
+def create_dataloaders(X_train, y_train, X_val, y_val, batch_size, cnn_input=False):
+    X_train_tensor = torch.tensor(X_train.values, dtype=torch.float32)
+    X_val_tensor = torch.tensor(X_val.values, dtype=torch.float32)
+    y_train_tensor = torch.tensor(y_train.values, dtype=torch.float32).view(-1, 1)
+    y_val_tensor = torch.tensor(y_val.values, dtype=torch.float32).view(-1, 1)
+    
+    # Reshape for CNN if needed (batch_size, channels, sequence_length)
+    if cnn_input:
+        X_train_tensor = X_train_tensor.view(X_train_tensor.shape[0], 1, -1)
+        X_val_tensor = X_val_tensor.view(X_val_tensor.shape[0], 1, -1)
+    
+    train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
+    val_dataset = TensorDataset(X_val_tensor, y_val_tensor)
+    
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
+    
+    # Return sequence length for CNN model, feature size for FNN model
+    input_size = X_train_tensor.shape[-1] if cnn_input else X_train_tensor.shape[1]
+    
+    return train_loader, val_loader, input_size
+
+# Define FNN Model 
+class HousePriceFNN(nn.Module):
+    def __init__(self, input_size):
+        super(HousePriceFNN, self).__init__()
+        self.net = nn.Sequential(
+            nn.Linear(input_size, 512), nn.ReLU(), nn.Dropout(0.2),
+            nn.Linear(512, 256), nn.ReLU(),
+            nn.Linear(256, 128), nn.ReLU(), nn.Dropout(0.2),
+            nn.Linear(128, 64), nn.ReLU(),
+            nn.Linear(64, 32), nn.ReLU(),
+            nn.Linear(32, 16), nn.ReLU(),
+            nn.Linear(16, 1)
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
+# Define CNN Model 
+class HousePriceCNN(nn.Module):
+    def __init__(self, input_size):
+        super(HousePriceCNN, self).__init__()
+        self.cnn = nn.Sequential(
+            nn.Conv1d(in_channels=1, out_channels=16, kernel_size=3, padding=1),
+            nn.BatchNorm1d(16),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=16, out_channels=32, kernel_size=3, padding=1),
+            nn.BatchNorm1d(32),
+            nn.ReLU(),
+            nn.Conv1d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
+            nn.BatchNorm1d(64),
+            nn.ReLU(),
+            nn.Dropout(0.3)
+        )
+        
+        self.fc = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(64 * input_size, 128),
+            nn.ReLU(),
+            nn.Dropout(0.2),
+            nn.Linear(128, 64),
+            nn.ReLU(),
+            nn.Linear(64, 32),
+            nn.ReLU(),
+            nn.Linear(32, 1)
+        )
+
+    def forward(self, x):
+        x = self.cnn(x)
+        x = self.fc(x)
+        return x
+
+# Define RMSLE Loss 
+class RMSLELoss(nn.Module):
+    def __init__(self):
+        super(RMSLELoss, self).__init__()
+
+    def forward(self, y_pred, y_true):
+        y_pred = torch.clamp(y_pred, min=0)
+        return torch.sqrt(torch.mean((torch.log1p(y_pred) - torch.log1p(y_true)) ** 2))
+
+# Define MAPE Loss 
+class MAPELoss(nn.Module):
+    def __init__(self):
+        super(MAPELoss, self).__init__()
+
+    def forward(self, y_pred, y_true):
+        epsilon = 1e-7
+        return torch.mean(torch.abs((y_true - y_pred) / (y_true + epsilon))) * 100
+
+# Train Model 
+def train_model(model, train_loader, val_loader, criterion, optimizer, num_epochs, patience, device):
+    history = {'train_loss': [], 'val_loss': []}
+    best_val_loss = float('inf')
+    early_stopping_counter = 0
+
+    for epoch in range(num_epochs):
+        model.train()
+        running_loss = 0.0
+        
+        for X_batch, y_batch in train_loader:
+            X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+            optimizer.zero_grad()
+            outputs = torch.clamp(model(X_batch), min=0)
+            loss = criterion(outputs, y_batch)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+        
+        train_loss = running_loss / len(train_loader)
+        history['train_loss'].append(train_loss)
+
+        # === Validation Step ===
+        model.eval()
+        val_loss = 0.0
+        with torch.no_grad():
+            for X_batch, y_batch in val_loader:
+                X_batch, y_batch = X_batch.to(device), y_batch.to(device)
+                outputs = torch.clamp(model(X_batch), min=0)
+                loss = criterion(outputs, y_batch)
+                val_loss += loss.item()
+        val_loss /= len(val_loader)
+        history['val_loss'].append(val_loss)
+
+        # Early Stopping
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            early_stopping_counter = 0
+        else:
+            early_stopping_counter += 1
+
+        if early_stopping_counter >= patience:
+            print(f"Early stopping at epoch {epoch + 1} | Best Val Loss: {best_val_loss:.4f}")
+            break
+
+        if (epoch + 1) % 25 == 0:
+            print(f"Epoch [{epoch + 1}/{num_epochs}] | Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f}")
+
+    return history
+
+# Plot Training History
+def plot_training_history(history, title="Training History"):
     plt.figure(figsize=(8, 5))
     plt.plot(history['train_loss'], label="Train Loss", color='blue')
     plt.plot(history['val_loss'], label="Validation Loss", color='orange')
@@ -544,5 +686,4 @@ def plot_training_history(history, title="FNN Training Progress"):
     plt.legend()
     plt.grid()
     plt.show()
-
 
