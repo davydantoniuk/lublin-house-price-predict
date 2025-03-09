@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.mplot3d import Axes3D  
 import seaborn as sns  
+from IPython.display import display
 
 from sklearn.preprocessing import StandardScaler, OneHotEncoder, MinMaxScaler
 from sklearn.model_selection import train_test_split, GridSearchCV, cross_val_score, RandomizedSearchCV
@@ -251,112 +252,6 @@ def plot_metric_comparison(metric_values, metric_name):
     # Display the plot
     plt.show()
     
-
-# Function to predict house price and return confidence interval
-def predict_house_price(
-    user_data, 
-    model: RandomForestRegressor, 
-    label_encoder_floor: LabelEncoder, 
-    label_encoder_region: LabelEncoder, 
-    lambda_area: float, 
-    region_weights: dict, 
-    floor_weights: dict, 
-    room_weights: dict, 
-    expected_features: list, 
-    significance_level=0.05
-):
-    """
-    Predicts the house price based on user input data and returns a confidence interval.
-
-    Parameters:
-    - user_data (dict): Dictionary containing 'Rooms', 'Area', 'Floor', 'Region', 'Elevator', 'Year'
-    - model (RandomForestRegressor): Pre-trained Random Forest model
-    - label_encoder_floor (LabelEncoder): Encoder for Floor feature
-    - label_encoder_region (LabelEncoder): Encoder for Region feature
-    - lambda_area (float): Box-Cox transformation lambda for Area
-    - region_weights (dict): Precomputed region weight mapping
-    - floor_weights (dict): Precomputed floor weight mapping
-    - room_weights (dict): Precomputed room weight mapping
-    - expected_features (list): The exact feature order used during model training
-    - significance_level (float): User-defined significance level (default 0.05 for 95% confidence)
-
-    Returns:
-    - predicted_price (float): Predicted price of the house
-    - confidence_interval (tuple): Lower and upper bounds of the confidence interval
-    """
-
-    # Convert user input to DataFrame
-    data = pd.DataFrame([user_data])
-
-    # Merge floors 5 and above into "5+ piętro"
-    high_floors = ['5 piętro', '6 piętro', '7 piętro', '8 piętro', '9 piętro', '10 piętro', '10+ piętro']
-    data['Floor'] = data['Floor'].replace(high_floors, '5+ piętro')
-
-    # Handle regions - replace low-frequency ones with "Other"
-    if user_data['Region'] not in region_weights:
-        data['Region'] = 'Other'
-
-    # Apply Box-Cox Transformation for Area
-    data['Area'] = boxcox(data['Area'], lambda_area)
-
-    # Label encoding for categorical features
-    data['Floor'] = label_encoder_floor.transform(data['Floor'])
-    data['Region'] = label_encoder_region.transform(data['Region'])
-
-    # Convert Elevator to binary (if not already)
-    data['Elevator'] = data['Elevator'].apply(lambda x: 1 if x in [1, 'Yes', 'yes', 'y', 'true', True] else 0)
-
-    # **Ensure correct feature order and drop unexpected features**
-    missing_features = [feature for feature in expected_features if feature not in data.columns]
-    extra_features = [feature for feature in data.columns if feature not in expected_features]
-
-    if missing_features:
-        raise ValueError(f"🚨 Missing required features: {missing_features}")
-
-    if extra_features:
-        print(f"⚠️ Warning: Ignoring unexpected features: {extra_features}")
-
-    # **Ensure correct column order & drop any extra columns**
-    data = data[expected_features]
-
-    # **Ensure correct data types**
-    data = data.astype({
-        'Area': 'float64',
-        'Elevator': 'float64',
-        'Year': 'int32',
-        'Rooms': 'float64',
-        'Floor': 'int32',
-        'Region': 'int32'
-    })
-
-    # **Check feature names and order before prediction**
-    print("Features expected by model:", list(model.feature_names_in_))
-    print("Features provided for prediction:", list(data.columns))
-
-    # **Final validation before prediction**
-    if not np.array_equal(model.feature_names_in_, data.columns.to_numpy()):
-        raise ValueError("🚨 Feature names or order do not match what was used during model training.")
-
-    # Predict house price
-    predicted_price = model.predict(data)[0]
-
-    # Get predictions from all individual trees in the Random Forest
-    tree_predictions = np.array([tree.predict(data)[0] for tree in model.estimators_])
-
-    # Compute the standard deviation of tree predictions
-    std_dev = np.std(tree_predictions)
-
-    # Compute confidence interval based on standard normal distribution
-    z_score = norm.ppf(1 - significance_level / 2)  # Two-tailed z-score for given significance level
-    margin_of_error = z_score * std_dev
-
-    # Calculate confidence interval
-    lower_bound = max(0, predicted_price - margin_of_error)  # Ensuring price is not negative
-    upper_bound = predicted_price + margin_of_error
-
-    return predicted_price, (lower_bound, upper_bound)
-
-
 # Define parameter grid for Random Forest
 PARAM_GRID = {
     'n_estimators': [100, 200, 300],
@@ -840,3 +735,225 @@ def plot_shap_explanations(model, X_test, model_type='cat', num_cases=4, seed=42
 
     plt.show()
 
+
+# ================================================================================================
+# ===========================Functions to predict new observations================================
+# ================================================================================================
+
+# Expected columns after transformation
+EXPECTED_COLUMNS = [
+    'Area', 'Elevator', 'Year', 'Rooms',
+    'Floor_2 piętro', 'Floor_3 piętro', 'Floor_4 piętro', 'Floor_5+ piętro', 'Floor_parter',
+    'Region_Czechów Północny', 'Region_Czuby Północne', 'Region_Dziesiąta', 'Region_Kośminek',
+    'Region_Other', 'Region_Ponikwoda', 'Region_Rury', 'Region_Sławin', 'Region_Wieniawa',
+    'Region_Wrotków', 'Region_Węglin Południowy', 'Region_Śródmieście'
+]
+
+# Floor mapping and merging
+floor_mapping = {
+    'parter': 'Floor_parter',
+    '1 piętro': 'Floor_1 piętro',
+    '2 piętro': 'Floor_2 piętro',
+    '3 piętro': 'Floor_3 piętro',
+    '4 piętro': 'Floor_4 piętro',
+    '5+ piętro': 'Floor_5+ piętro'
+}
+
+# High floors to merge into '5+ piętro'
+high_floors = ['5 piętro', '6 piętro', '7 piętro', '8 piętro', '9 piętro', '10 piętro', '10+ piętro']
+
+# Region mapping (low-frequency → 'Other')
+all_regions = [
+    'Rury', 'Czechów Północny', 'Wrotków', 'Czechów Południowy', 'Kośminek',
+    'Wieniawa', 'Ponikwoda', 'Śródmieście', 'Bronowice', 'Węglin Południowy',
+    'Dziesiąta', 'Tatary', 'Felin', 'Kalinowszczyzna', 'Sławin', 'Czuby Północne',
+    'Konstantynów', 'Szerokie', 'Czuby Południowe', 'Stare Miasto',
+    'Za Cukrownią', 'Zemborzyce', 'Węglin Północny', 'Hajdów-Zadębie'
+]
+
+low_frequency_regions = [
+    'Bronowice', 'Stare Miasto', 'Kalinowszczyzna', 'Konstantynów', 'Tatary', 
+    'Czuby Południowe', 'Felin', 'Szerokie', 'Za Cukrownią', 'Zemborzyce',
+    'Węglin Północny', 'Hajdów-Zadębie'
+]
+
+# Store Box-Cox lambda and winsorization limits
+area_lambda = joblib.load('model_components/boxcox_lambda.pkl')
+year_lower, year_upper = joblib.load('model_components/winsorization_limits.pkl')
+
+# Load training and test sets
+X_train, y_train, X_test, y_test = joblib.load('model_components/data_split.pkl')
+
+# Load sample weights
+try:
+    sample_weight = joblib.load('model_components/sample_weights.pkl')
+except FileNotFoundError:
+    sample_weight = None
+
+# PREPARE INPUT DATA
+def prepare_input_data(df):
+    '''
+    Prepares the input data for model prediction by applying transformations, encoding, 
+    and handling missing values.
+
+    Parameters:
+    - df (pd.DataFrame): Input DataFrame containing user-provided data.
+
+    Returns:
+    - pd.DataFrame: Processed DataFrame ready for prediction.
+    '''
+    # 1. Fix data types 
+    df['Area'] = df['Area'].astype(float)
+    df['Elevator'] = df['Elevator'].astype(int)
+    df['Year'] = df['Year'].astype(int)
+    df['Rooms'] = df['Rooms'].astype(int)
+
+    # 2. Handle 'Floor' values 
+    df['Floor'] = df['Floor'].replace({'poddasze': '3 piętro', 'suterena': 'parter'})
+    df['Floor'] = df['Floor'].replace(high_floors, '5+ piętro')
+
+    # Initialize one-hot encoded floor columns
+    for col in floor_mapping.values():
+        df[col] = 0
+
+    if df['Floor'].iloc[0] in floor_mapping:
+        df[floor_mapping[df['Floor'].iloc[0]]] = 1
+    
+    # 3. Handle 'Region' values 
+    region = df['Region'].iloc[0]
+    if region in low_frequency_regions:
+        region = 'Other'
+
+    # Initialize one-hot encoded region columns
+    for region_col in all_regions:
+        df[f'Region_{region_col}'] = 0
+
+    if f'Region_{region}' in df.columns:
+        df[f'Region_{region}'] = 1
+
+    # 4. Apply Box-Cox transformation for 'Area' 
+    df['Area'] = (df['Area'] ** area_lambda - 1) / area_lambda if area_lambda != 0 else np.log(df['Area'])
+
+    # 5. Winsorize 'Year' 
+    df['Year'] = df['Year'].clip(lower=year_lower, upper=year_upper)
+
+    # 6. Drop original categorical columns 
+    df.drop(columns=['Floor', 'Region'], inplace=True)
+
+    # 7. Ensure all expected columns are present 
+    for col in EXPECTED_COLUMNS:
+        if col not in df.columns:
+            df[col] = 0
+
+    # 8. Order columns to match model training order 
+    df = df[EXPECTED_COLUMNS]
+    
+    return df
+
+
+# SHAP WATERFALL PLOT
+def plot_shap_waterfall(model, input_data, model_type):
+    '''
+    Generates a SHAP waterfall plot to explain individual model predictions.
+
+    Parameters:
+    - model (object): The trained stacking model.
+    - input_data (pd.DataFrame): Input data for prediction.
+    - model_type (str): Type of base model ('rf' or 'cat').
+
+    Returns:
+    - matplotlib.figure.Figure: SHAP waterfall plot.
+    '''
+    shap.initjs()
+
+    if model_type == 'rf':
+        explainer = shap.TreeExplainer(model.named_estimators_['rf'])
+        shap_values = explainer.shap_values(input_data)[0]
+        base_value = explainer.expected_value[0]
+    elif model_type == 'cat':
+        explainer = shap.TreeExplainer(model.named_estimators_['cat'])
+        shap_values = explainer.shap_values(input_data)[0]
+        base_value = explainer.expected_value
+    else:
+        raise ValueError("Unsupported model type. Use 'rf' or 'cat'.")
+
+    # Create SHAP waterfall plot
+    shap_exp = shap.Explanation(
+        values=shap_values,
+        base_values=base_value,
+        data=input_data.iloc[0].values,
+        feature_names=input_data.columns
+    )
+
+    fig = plt.figure(figsize=(12, 8))
+    shap.plots.waterfall(shap_exp, show=False)
+    plt.close(fig)  
+
+    return fig
+
+
+# PREDICT FUNCTION
+def predict_house_price(model, input_df, model_type='rf', significance_level=0.95):
+    '''
+    Predicts house price based on input features and returns the prediction with 
+    a confidence interval and a SHAP waterfall plot.
+
+    Parameters:
+    - model (object): Trained stacking model (RandomForest + CatBoost).
+    - input_df (pd.DataFrame): DataFrame with user-provided input features.
+    - model_type (str): Type of base model to use ('rf' or 'cat').
+    - significance_level (float): Desired confidence level (e.g., 0.95).
+
+    Returns:
+    - str: Predicted price (formatted).
+    - str: Lower bound of prediction interval (formatted).
+    - str: Upper bound of prediction interval (formatted).
+    - matplotlib.figure.Figure: SHAP waterfall plot.
+    '''
+    # Step 1: Prepare input data
+    processed_data = prepare_input_data(input_df)
+    
+    # Step 2: Predict price
+    prediction = model.predict(processed_data)[0]
+
+    # Step 3: Estimate confidence interval using base model residual variance
+    se = 0  # Default to zero if variance cannot be computed
+
+    try:
+        if model_type == 'rf':
+            rf_model = model.named_estimators_['rf']
+            y_train_pred = rf_model.predict(X_train)
+
+            # Compute residuals from RF model
+            residuals = y_train - y_train_pred
+            variance = np.var(residuals)  # Use variance of residuals for standard error
+            se = np.sqrt(variance)
+        
+        elif model_type == 'cat':
+            cat_model = model.named_estimators_['cat']
+            y_train_pred = cat_model.predict(X_train)
+
+            # Compute residuals from CatBoost model
+            residuals = y_train - y_train_pred
+            variance = np.var(residuals)
+            se = np.sqrt(variance)
+        else:
+            raise ValueError("Unsupported model type. Use 'rf' or 'cat'.")
+
+    except Exception as e:
+        print(f"Warning: Unable to compute confidence interval due to: {e}")
+
+    # Step 4: Compute dynamic Z-score based on user-defined significance level
+    if 0 < significance_level < 1:
+        z_score = norm.ppf(1 - (1 - significance_level) / 2)  # Works for any significance level!
+    else:
+        raise ValueError("Significance level must be between 0 and 1")
+
+    # Only calculate interval if variance was computed successfully
+    lower_bound = prediction - z_score * se
+    upper_bound = prediction + z_score * se
+    
+    # Step 5: Generate SHAP waterfall plot
+    shap_plot = plot_shap_waterfall(model, processed_data, model_type)
+
+    return f"{prediction:,.2f}", f"{lower_bound:,.2f}", f"{upper_bound:,.2f}", shap_plot
