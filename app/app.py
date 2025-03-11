@@ -40,7 +40,7 @@ async def predict(
     floor: str = Form(...),
     region: str = Form(...),
     year_of_building: int = Form(...),
-    alpha: float = Form(0.05),
+    alpha: float = Form(0.95),
 ):
     if elevator not in [0, 1]:
         raise HTTPException(status_code=400, detail="Invalid value for elevator. Must be 0 or 1.")
@@ -54,14 +54,13 @@ async def predict(
         "Year": year_of_building
     }
     user_data = pd.DataFrame([user_data])
-    predicted_price, lower, upper, plot = predict_house_price(model, user_data, significance_level=alpha)
-    confidence_level = (1 - alpha) * 100
+    predicted_price, lower, upper, plot = predict_house_price(model, user_data, confidence_level=alpha)
 
     return templates.TemplateResponse("index.html", {
         "request": request,
         "predicted_price": f"{float(predicted_price.replace(',', '')):,.2f}",
         "confidence_interval": f"[{float(lower.replace(',', '')):,.2f}, {float(upper.replace(',', '')):,.2f}]",
-        "confidence_level": confidence_level,
+        "confidence_level": alpha,
         "area": area,
         "elevator": elevator,
         "rooms": rooms,

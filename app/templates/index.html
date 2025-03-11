@@ -153,6 +153,8 @@
                     <option value="{{ i }} piętro" {% if floor == i|string + ' piętro' %}selected{% endif %}>{{ i }} piętro</option>
                 {% endfor %}
                 <option value="10+ piętro" {% if floor == '10+ piętro' %}selected{% endif %}>10+ piętro</option>
+                <option value="poddasze" {% if floor == 'poddasze' %}selected{% endif %}>Poddasze</option>
+                <option value="suterena" {% if floor == 'suterena' %}selected{% endif %}>Suterena</option>
             </select>
 
             <label for="region">Region</label>
@@ -169,8 +171,19 @@
             <label for="year_of_building">Year of Building</label>
             <input type="number" id="year_of_building" name="year_of_building" value="{{ year_of_building or '' }}" required>
 
-            <label for="alpha">Significance Level (α)</label>
-            <input type="number" id="alpha" name="alpha" step="0.01" min="0" max="1" value="{{ alpha or 0.05 }}" required>
+            <label for="alpha">Confidence Level</label>
+            <input type="number" id="alpha" name="alpha" step="0.01" min="0" max="1" value="{{ alpha or 0.95 }}" required oninput="validateAlpha(this)">
+            <small id="alpha-warning" style="color: #ff6666; display: none; font-size: 1.1em;">❗Please enter a value between 0 and 1.❗</small>
+            <script>
+                function validateAlpha(input) {
+                    const warning = document.getElementById('alpha-warning');
+                    if (input.value <= 0 || input.value >= 1) {
+                        warning.style.display = 'block';
+                    } else {
+                        warning.style.display = 'none';
+                    }
+                }
+            </script>
 
             <button type="submit">🔍 Predict Price</button>
         </form>
@@ -178,7 +191,7 @@
         {% if predicted_price %}
             <div class="result">
                 <h2>Predicted Price: <br> <span style="color: #66ff66;">{{ predicted_price }} PLN</span></h2>
-                <p>{{ confidence_level }}% Confidence Interval</p>
+                <p>{{ ('%.1f' % (confidence_level * 100)).rstrip('0').rstrip('.') }}% Confidence Interval</p>
                 <p>{{ confidence_interval }}</p>
             </div>
         {% endif %}
