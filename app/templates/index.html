@@ -1,138 +1,185 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>House Price Prediction</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
+        /* General Styling */
+        html, body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #2b2b2b; /* Light Dark Background */
+            color: #e0e0e0;
             margin: 0;
             padding: 0;
+            height: 100%;
+            overflow-y: auto; /* Allow scrolling */
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
+
         .container {
-            background-color: #fff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            width: 300px;
-            margin: 20px auto;
-            overflow: hidden;
-        }
-        h1 {
+            background-color: #3a3a3a; /* Slightly lighter dark */
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            width: 100%;
+            max-width: 420px;
             text-align: center;
-            color: #333;
         }
+
+        h1 {
+            color: #4caf50; /* Green Highlight */
+            font-size: 1.8em;
+            margin-bottom: 20px;
+        }
+
         form {
             display: flex;
             flex-direction: column;
+            gap: 15px;
         }
+
         label {
+            font-weight: bold;
+            font-size: 0.9em;
+            text-align: left;
             margin-bottom: 5px;
-            color: #555;
+            color: #bbb;
         }
+
         input, select {
-            margin-bottom: 15px;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+            padding: 12px;
+            background-color: #4a4a4a; /* Darker input field */
+            color: #fff;
+            border: 1px solid #66bb6a; /* Green border */
+            border-radius: 6px;
+            font-size: 1em;
+            outline: none;
+            transition: 0.3s;
         }
+
+        input:focus, select:focus {
+            border-color: #81c784; /* Lighter green */
+        }
+
         button {
-            padding: 10px;
-            background-color: #28a745;
+            padding: 12px;
+            background-color: #2e7d32; /* Dark Green */
             color: #fff;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
             cursor: pointer;
+            transition: 0.3s;
         }
+
         button:hover {
-            background-color: #218838;
+            background-color: #388e3c; /* Brighter Green */
         }
+
         .result {
-            text-align: center;
             margin-top: 20px;
             font-size: 1.2em;
-            color: #333;
+            background-color: #4a4a4a;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: pointer;
+            color: #66bb6a; /* Green Tooltip */
+        }
+
+        .tooltip-text {
+            visibility: hidden;
+            width: 180px;
+            background-color: #444;
+            color: #fff;
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px;
+            position: absolute;
+            z-index: 1;
+            bottom: 150%;
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Ensure scrolling when zooming */
+        @media (max-width: 600px), (max-height: 700px) {
+            html, body {
+                height: auto;
+                display: block;
+                padding: 20px;
+            }
+            .container {
+                margin: auto;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>House Price Prediction</h1>
+        <h1>🏠 House Price Prediction</h1>
         <form action="/predict/" method="post">
-            <label for="area">Area (m²):</label>
+            <label for="area">Area (m²) <span class="tooltip">ℹ️<span class="tooltip-text">Enter the total area of the house.</span></span></label>
             <input type="number" id="area" name="area" step="0.01" value="{{ area or '' }}" required>
 
-            <label for="elevator">Elevator:</label>
+            <label for="elevator">Elevator <span class="tooltip">ℹ️<span class="tooltip-text">Does the building have an elevator?</span></span></label>
             <select id="elevator" name="elevator" required>
                 <option value="1" {% if elevator == 1 %}selected{% endif %}>Yes</option>
                 <option value="0" {% if elevator == 0 %}selected{% endif %}>No</option>
             </select>
 
-            <label for="rooms">Number of Rooms:</label>
+            <label for="rooms">Number of Rooms</label>
             <input type="number" id="rooms" name="rooms" value="{{ rooms or '' }}" required>
 
-            <label for="floor">Floor:</label>
+            <label for="floor">Floor</label>
             <select id="floor" name="floor" required>
                 <option value="parter" {% if floor == 'parter' %}selected{% endif %}>Parter</option>
-                <option value="1 piętro" {% if floor == '1 piętro' %}selected{% endif %}>1 piętro</option>
-                <option value="2 piętro" {% if floor == '2 piętro' %}selected{% endif %}>2 piętro</option>
-                <option value="3 piętro" {% if floor == '3 piętro' %}selected{% endif %}>3 piętro</option>
-                <option value="4 piętro" {% if floor == '4 piętro' %}selected{% endif %}>4 piętro</option>
-                <option value="5 piętro" {% if floor == '5 piętro' %}selected{% endif %}>5 piętro</option>
-                <option value="6 piętro" {% if floor == '6 piętro' %}selected{% endif %}>6 piętro</option>
-                <option value="7 piętro" {% if floor == '7 piętro' %}selected{% endif %}>7 piętro</option>
-                <option value="8 piętro" {% if floor == '8 piętro' %}selected{% endif %}>8 piętro</option>
-                <option value="9 piętro" {% if floor == '9 piętro' %}selected{% endif %}>9 piętro</option>
-                <option value="10 piętro" {% if floor == '10 piętro' %}selected{% endif %}>10 piętro</option>
+                {% for i in range(1, 11) %}
+                    <option value="{{ i }} piętro" {% if floor == i|string + ' piętro' %}selected{% endif %}>{{ i }} piętro</option>
+                {% endfor %}
                 <option value="10+ piętro" {% if floor == '10+ piętro' %}selected{% endif %}>10+ piętro</option>
             </select>
 
-            <label for="region">Region:</label>
+            <label for="region">Region</label>
             <input type="text" id="region" name="region" list="regions" value="{{ region or '' }}" required>
             <datalist id="regions">
-                <option value="Abramowice">
-                <option value="Bronowice">
-                <option value="Czechów Południowy">
-                <option value="Czechów Północny">
-                <option value="Czuby Południowe">
-                <option value="Czuby Północne">
-                <option value="Dziesiąta">
-                <option value="Felin">
-                <option value="Głusk">
-                <option value="Hajdów-Zadębie">
-                <option value="Kalinowszczyzna">
-                <option value="Konstantynów">
-                <option value="Kośminek">
-                <option value="Ponikwoda">
-                <option value="Rury">
-                <option value="Sławin">
-                <option value="Sławinek">
-                <option value="Stare Miasto">
-                <option value="Szerokie">
-                <option value="Śródmieście">
-                <option value="Tatary">
-                <option value="Węglin Południowy">
-                <option value="Węglin Północny">
-                <option value="Wieniawa">
-                <option value="Wrotków">
-                <option value="Za Cukrownią">
-                <option value="Zemborzyce">
+                {% for region in ["Abramowice", "Bronowice", "Czechów Południowy", "Czechów Północny", "Czuby Południowe",
+                "Czuby Północne", "Dziesiąta", "Felin", "Głusk", "Hajdów-Zadębie", "Kalinowszczyzna", "Konstantynów",
+                "Kośminek", "Ponikwoda", "Rury", "Sławin", "Sławinek", "Stare Miasto", "Szerokie", "Śródmieście", "Tatary",
+                "Węglin Południowy", "Węglin Północny", "Wieniawa", "Wrotków", "Za Cukrownią", "Zemborzyce"] %}
+                    <option value="{{ region }}">
+                {% endfor %}
             </datalist>
 
-            <label for="year_of_building">Year of Building:</label>
+            <label for="year_of_building">Year of Building</label>
             <input type="number" id="year_of_building" name="year_of_building" value="{{ year_of_building or '' }}" required>
 
-            <label for="alpha">Significance Level (α):</label>
+            <label for="alpha">Significance Level (α)</label>
             <input type="number" id="alpha" name="alpha" step="0.01" min="0" max="1" value="{{ alpha or 0.05 }}" required>
 
-            <button type="submit">Predict Price</button>
+            <button type="submit">🔍 Predict Price</button>
         </form>
 
         {% if predicted_price %}
             <div class="result">
-                <h2>Predicted Price: {{ predicted_price }} PLN</h2>
-                <p style="text-align: center;">{{ confidence_level }}% Confidence Interval</p>
-                <p style="text-align: center;">{{ confidence_interval }}</p>
+                <h2>Predicted Price: <br> <span style="color: #66ff66;">{{ predicted_price }} PLN</span></h2>
+                <p>{{ confidence_level }}% Confidence Interval</p>
+                <p>{{ confidence_interval }}</p>
             </div>
         {% endif %}
     </div>
