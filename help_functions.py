@@ -893,7 +893,7 @@ def plot_shap_waterfall(model, input_data, model_type):
 
 
 # PREDICT FUNCTION
-def predict_house_price(model, input_df, model_type='rf', significance_level=0.95):
+def predict_house_price(model, input_df, model_type='rf', confidence_level=0.95):
     '''
     Predicts house price based on input features and returns the prediction with 
     a confidence interval and a SHAP waterfall plot.
@@ -902,7 +902,7 @@ def predict_house_price(model, input_df, model_type='rf', significance_level=0.9
     - model (object): Trained stacking model (RandomForest + CatBoost).
     - input_df (pd.DataFrame): DataFrame with user-provided input features.
     - model_type (str): Type of base model to use ('rf' or 'cat').
-    - significance_level (float): Desired confidence level (e.g., 0.95).
+    - confidence_level (float): Desired confidence level (e.g., 0.95).
 
     Returns:
     - str: Predicted price (formatted).
@@ -944,8 +944,8 @@ def predict_house_price(model, input_df, model_type='rf', significance_level=0.9
         print(f"Warning: Unable to compute confidence interval due to: {e}")
 
     # Step 4: Compute dynamic Z-score based on user-defined significance level
-    if 0 < significance_level < 1:
-        z_score = norm.ppf(1 - (1 - significance_level) / 2)  # Works for any significance level!
+    if 0 < confidence_level < 1:
+        z_score = norm.ppf(1 - (1 - confidence_level) / 2)  # Works for any significance level!
     else:
         raise ValueError("Significance level must be between 0 and 1")
 
