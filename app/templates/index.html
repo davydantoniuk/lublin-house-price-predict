@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>House Price Prediction</title>
+    <title>Lublin House Price Prediction</title>
     <style>
         /* General Styling */
         html, body {
@@ -218,16 +218,16 @@
 </head>
 <body>
     <div class="container">
-        <h1>🏠 House Price Prediction</h1>
+        <h1>🏠Lublin House Price Prediction</h1>
         <form action="/predict/" method="post">
             <!-- Left Column -->
             <div class="form-group">
-                <label for="area">Area (m²) <span class="tooltip">ℹ️<span class="tooltip-text">Enter the total area of the house.</span></span></label>
+                <label for="area">Area (m²)</label>
                 <input type="number" id="area" name="area" step="0.01" value="{{ area or '' }}" required>
             </div>
 
             <div class="form-group">
-                <label for="elevator">Elevator <span class="tooltip">ℹ️<span class="tooltip-text">Does the building have an elevator?</span></span></label>
+                <label for="elevator">Elevator</label>
                 <select id="elevator" name="elevator" required>
                     <option value="1" {% if elevator == 1 %}selected{% endif %}>Yes</option>
                     <option value="0" {% if elevator == 0 %}selected{% endif %}>No</option>
