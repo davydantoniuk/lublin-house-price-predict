@@ -8,25 +8,14 @@ import numpy as np
 from scipy.stats import norm
 import os
 import sys
-
-# Get the absolute path of the script's location
-script_dir = os.path.dirname(os.path.abspath(__file__))
-
-# Move one level up
-project_root = os.path.abspath(os.path.join(script_dir, ".."))
-sys.path.append(project_root)  # Add to Python's search path
-
-# Change the working directory
-os.chdir(project_root)
-
-from help_functions import predict_house_price
+from price_prediction import predict_house_price
 
 # Load the trained model and other components
 model = joblib.load("model_components/stacking_model.pkl")
 
 # Initialize FastAPI and templates
 app = FastAPI()
-templates = Jinja2Templates(directory="app/templates")
+templates = Jinja2Templates(directory="templates")
 
 @app.get("/", response_class=HTMLResponse)
 async def home(request: Request):
