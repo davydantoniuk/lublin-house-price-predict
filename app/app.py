@@ -66,4 +66,5 @@ async def predict(
         "region": region,
         "year_of_building": year_of_building,
         "alpha": alpha,
+        "shap_plot": plot
     })

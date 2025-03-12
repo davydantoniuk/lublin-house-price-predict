@@ -189,11 +189,30 @@
             transform: translateX(24px);
         }
         #alpha {
-            width: calc(100% - 24px); /* Make width consistent with other inputs */
-            padding: 10px; /* Reduced padding */
-            font-size: 1em; /* Match other inputs */
+            width: calc(100% - 24px); 
+            padding: 10px; 
+            font-size: 1em; 
             border-radius: 6px;
-            box-sizing: border-box; /* Ensure padding and border are included in width */
+            box-sizing: border-box; 
+        }
+        .shap-plot {
+            margin-top: 25px;
+            padding: 15px;
+            background-color: #4a4a4a;
+            border-radius: 10px;
+        }
+
+        .shap-plot h3 {
+            color: #66bb6a;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .shap-plot img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
         }
     </style>
 </head>
@@ -286,6 +305,12 @@
                         <div class="confidence-info">
                             <p>{{ ('%.1f' % (confidence_level * 100)).rstrip('0').rstrip('.') }}% Confidence Interval</p>
                             <p>{{ confidence_interval }}</p>
+                        </div>
+                    {% endif %}
+                    {% if shap_plot %}
+                        <div class="shap-plot">
+                            <h3>Feature Impact Explanation</h3>
+                            <img src="data:image/png;base64,{{ shap_plot }}" alt="SHAP Explanation">
                         </div>
                     {% endif %}
                 </div>
