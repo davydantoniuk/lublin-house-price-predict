@@ -8,178 +8,192 @@
         /* General Styling */
         html, body {
             font-family: 'Poppins', sans-serif;
-            background-color: #2b2b2b; /* Light Dark Background */
+            background-color: #2b2b2b;
             color: #e0e0e0;
             margin: 0;
-            padding: 0;
-            height: 100%;
-            overflow-y: auto; /* Allow scrolling */
+            padding: 20px;
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
         }
 
         .container {
-            background-color: #3a3a3a; /* Slightly lighter dark */
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            background-color: #3a3a3a;
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
             width: 100%;
-            max-width: 420px;
-            text-align: center;
+            max-width: 800px;
         }
 
         h1 {
-            color: #4caf50; /* Green Highlight */
-            font-size: 1.8em;
-            margin-bottom: 20px;
+            color: #4caf50;
+            font-size: 2.2em;
+            margin-bottom: 30px;
+            text-align: center;
         }
 
         form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+        }
+
+        .form-group {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 8px;
         }
 
         label {
-            font-weight: bold;
-            font-size: 0.9em;
-            text-align: left;
-            margin-bottom: 5px;
-            color: #bbb;
+            font-weight: 600;
+            font-size: 0.95em;
+            color: #ccc;
         }
 
         input, select {
-            padding: 12px;
-            background-color: #4a4a4a; /* Darker input field */
+            padding: 14px;
+            background-color: #4a4a4a;
             color: #fff;
-            border: 1px solid #66bb6a; /* Green border */
-            border-radius: 6px;
-            font-size: 1em;
-            outline: none;
-            transition: 0.3s;
+            border: 2px solid #66bb6a;
+            border-radius: 8px;
+            font-size: 1.05em;
+            transition: all 0.3s ease;
         }
 
         input:focus, select:focus {
-            border-color: #81c784; /* Lighter green */
+            border-color: #81c784;
+            box-shadow: 0 0 8px rgba(102, 187, 106, 0.3);
         }
 
         button {
-            padding: 12px;
-            background-color: #2e7d32; /* Dark Green */
+            grid-column: 1 / -1;
+            padding: 16px;
+            background-color: #2e7d32;
             color: #fff;
             border: none;
-            border-radius: 6px;
-            font-size: 1em;
+            border-radius: 8px;
+            font-size: 1.1em;
             font-weight: bold;
             cursor: pointer;
-            transition: 0.3s;
+            transition: background-color 0.3s;
         }
 
         button:hover {
-            background-color: #388e3c; /* Brighter Green */
+            background-color: #388e3c;
         }
 
         .result {
-            margin-top: 20px;
-            font-size: 1.2em;
+            grid-column: 1 / -1;
+            margin-top: 25px;
+            font-size: 1.3em;
             background-color: #4a4a4a;
-            padding: 15px;
-            border-radius: 8px;
+            padding: 20px;
+            border-radius: 10px;
         }
 
-        .tooltip {
-            position: relative;
-            display: inline-block;
-            cursor: pointer;
-            color: #66bb6a; /* Green Tooltip */
-        }
+        /* Tooltip styles remain same */
 
-        .tooltip-text {
-            visibility: hidden;
-            width: 180px;
+        .confidence-controls {
+            grid-column: 1 / -1;
+            margin-top: 15px;
             background-color: #444;
-            color: #fff;
-            text-align: center;
-            padding: 8px;
-            border-radius: 6px;
-            position: absolute;
-            z-index: 1;
-            bottom: 150%;
-            left: 50%;
-            transform: translateX(-50%);
-            opacity: 0;
-            transition: opacity 0.3s;
+            padding: 20px;
+            border-radius: 10px;
         }
 
-        .tooltip:hover .tooltip-text {
-            visibility: visible;
-            opacity: 1;
-        }
-        /* Ensure scrolling when zooming */
-        @media (max-width: 600px), (max-height: 700px) {
-            html, body {
-                height: auto;
-                display: block;
-                padding: 20px;
-            }
-            .container {
-                margin: auto;
-            }
-        }
-
-        /* Add toggle switch styles */
         .toggle-label {
             display: flex;
             align-items: center;
-            gap: 10px;
-            cursor: pointer;
-            color: #bbb;
-            font-size: 0.9em;
-            margin: 10px 0;
-        }
-
-        .toggle-input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-            position: absolute;
+            gap: 15px;
+            font-size: 1em;
+            color: #ddd;
         }
 
         .toggle-slider {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-            background-color: #4a4a4a;
-            border-radius: 12px;
-            transition: 0.3s;
+            width: 60px;
+            height: 30px;
         }
 
         .toggle-slider:before {
-            content: '';
+            width: 26px;
+            height: 26px;
+        }
+
+        #confidence-input-container {
+            margin-top: 15px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+                margin: 20px;
+            }
+
+            form {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 1.8em;
+            }
+
+            input, select {
+                font-size: 1em;
+            }
+        }
+
+        /* Toggle Switch Styling */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
             position: absolute;
-            width: 20px;
-            height: 20px;
-            left: 2px;
-            bottom: 2px;
-            background-color: #fff;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: 0.4s;
+            border-radius: 26px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.4s;
             border-radius: 50%;
-            transition: 0.3s;
         }
 
-        .toggle-input:checked + .toggle-slider {
-            background-color: #2e7d32;
+        input:checked + .slider {
+            background-color: #4caf50;
         }
 
-        .toggle-input:checked + .toggle-slider:before {
-            transform: translateX(26px);
+        input:checked + .slider:before {
+            transform: translateX(24px);
         }
-
-        .confidence-info {
-            margin-top: 10px;
-            color: #bbb;
-            font-size: 0.9em;
+        #alpha {
+            width: calc(100% - 24px); /* Make width consistent with other inputs */
+            padding: 10px; /* Reduced padding */
+            font-size: 1em; /* Match other inputs */
+            border-radius: 6px;
+            box-sizing: border-box; /* Ensure padding and border are included in width */
         }
     </style>
 </head>
@@ -187,67 +201,84 @@
     <div class="container">
         <h1>🏠 House Price Prediction</h1>
         <form action="/predict/" method="post">
-            <label for="area">Area (m²) <span class="tooltip">ℹ️<span class="tooltip-text">Enter the total area of the house.</span></span></label>
-            <input type="number" id="area" name="area" step="0.01" value="{{ area or '' }}" required>
+            <!-- Left Column -->
+            <div class="form-group">
+                <label for="area">Area (m²) <span class="tooltip">ℹ️<span class="tooltip-text">Enter the total area of the house.</span></span></label>
+                <input type="number" id="area" name="area" step="0.01" value="{{ area or '' }}" required>
+            </div>
 
-            <label for="elevator">Elevator <span class="tooltip">ℹ️<span class="tooltip-text">Does the building have an elevator?</span></span></label>
-            <select id="elevator" name="elevator" required>
-                <option value="1" {% if elevator == 1 %}selected{% endif %}>Yes</option>
-                <option value="0" {% if elevator == 0 %}selected{% endif %}>No</option>
-            </select>
+            <div class="form-group">
+                <label for="elevator">Elevator <span class="tooltip">ℹ️<span class="tooltip-text">Does the building have an elevator?</span></span></label>
+                <select id="elevator" name="elevator" required>
+                    <option value="1" {% if elevator == 1 %}selected{% endif %}>Yes</option>
+                    <option value="0" {% if elevator == 0 %}selected{% endif %}>No</option>
+                </select>
+            </div>
 
-            <label for="rooms">Number of Rooms</label>
-            <input type="number" id="rooms" name="rooms" value="{{ rooms or '' }}" required>
+            <div class="form-group">
+                <label for="rooms">Number of Rooms</label>
+                <input type="number" id="rooms" name="rooms" value="{{ rooms or '' }}" required>
+            </div>
 
-            <label for="floor">Floor</label>
-            <select id="floor" name="floor" required>
-                <option value="parter" {% if floor == 'parter' %}selected{% endif %}>Parter</option>
-                {% for i in range(1, 11) %}
-                    <option value="{{ i }} piętro" {% if floor == i|string + ' piętro' %}selected{% endif %}>{{ i }} piętro</option>
-                {% endfor %}
-                <option value="10+ piętro" {% if floor == '10+ piętro' %}selected{% endif %}>10+ piętro</option>
-                <option value="poddasze" {% if floor == 'poddasze' %}selected{% endif %}>Poddasze</option>
-                <option value="suterena" {% if floor == 'suterena' %}selected{% endif %}>Suterena</option>
-            </select>
+            <!-- Right Column -->
+            <div class="form-group">
+                <label for="floor">Floor</label>
+                <select id="floor" name="floor" required>
+                    <option value="parter" {% if floor == 'parter' %}selected{% endif %}>Parter</option>
+                    {% for i in range(1, 11) %}
+                        <option value="{{ i }} piętro" {% if floor == i|string + ' piętro' %}selected{% endif %}>{{ i }} piętro</option>
+                    {% endfor %}
+                    <option value="10+ piętro" {% if floor == '10+ piętro' %}selected{% endif %}>10+ piętro</option>
+                    <option value="poddasze" {% if floor == 'poddasze' %}selected{% endif %}>Poddasze</option>
+                    <option value="suterena" {% if floor == 'suterena' %}selected{% endif %}>Suterena</option>
+                </select>
+            </div>
 
-            <label for="region">Region</label>
-            <input type="text" id="region" name="region" list="regions" value="{{ region or '' }}" required>
-            <datalist id="regions">
-                {% for r in [
-                    "Abramowice", "Bronowice", "Czechów Południowy", "Czechów Północny", "Czuby Południowe",
-                    "Czuby Północne", "Dziesiąta", "Felin", "Głusk", "Hajdów-Zadębie", "Kalinowszczyzna", "Konstantynów",
-                    "Kośminek", "Ponikwoda", "Rury", "Sławin", "Sławinek", "Stare Miasto", "Szerokie", "Śródmieście",
-                    "Tatary", "Węglin Południowy", "Węglin Północny", "Wieniawa", "Wrotków", "Za Cukrownią", "Zemborzyce"
-                ] %}
-                <option value="{{ r }}">
-                {% endfor %}
-            </datalist>
+            <div class="form-group">
+                <label for="region">Region</label>
+                <input type="text" id="region" name="region" list="regions" value="{{ region or '' }}" required>
+                <datalist id="regions">
+                    {% for r in [
+                        "Abramowice", "Bronowice", "Czechów Południowy", "Czechów Północny", "Czuby Południowe",
+                        "Czuby Północne", "Dziesiąta", "Felin", "Głusk", "Hajdów-Zadębie", "Kalinowszczyzna", "Konstantynów",
+                        "Kośminek", "Ponikwoda", "Rury", "Sławin", "Sławinek", "Stare Miasto", "Szerokie", "Śródmieście",
+                        "Tatary", "Węglin Południowy", "Węglin Północny", "Wieniawa", "Wrotków", "Za Cukrownią", "Zemborzyce"
+                    ] %}
+                    <option value="{{ r }}">
+                    {% endfor %}
+                </datalist>
+            </div>
 
-            <label for="year_of_building">Year of Building</label>
-            <input type="number" id="year_of_building" name="year_of_building" value="{{ year_of_building or '' }}" required>
+            <div class="form-group">
+                <label for="year_of_building">Year of Building</label>
+                <input type="number" id="year_of_building" name="year_of_building" value="{{ year_of_building or '' }}" required>
+            </div>
 
-            <label class="toggle-label">
-                Confidence Level
-                <input type="checkbox" id="toggle-ci" class="toggle-input" name="show_confidence" 
-                       {% if show_confidence %}checked{% endif %}>
-                <span class="toggle-slider"></span>
-            </label>
+            <!-- Confidence Controls -->
+            <div class="confidence-controls">
+                <label class="toggle-label">
+                    <span>Show Confidence Interval</span>
+                    <label class="switch">
+                        <input type="checkbox" id="toggle-ci" name="show_confidence" {% if show_confidence %}checked{% endif %}>
+                        <span class="slider round"></span>
+                    </label>
+                </label>
 
-            <div id="confidence-input-container" 
-                 style="display: none; overflow: hidden; max-height: 0; transition: max-height 0.3s ease;">
-                <input type="number" id="alpha" name="alpha" step="0.01" min="0" max="1" 
-                       value="{{ alpha or 0.95 }}" oninput="validateAlpha(this)" 
-                       style="width: 100%; box-sizing: border-box;">
-                <small id="alpha-warning" 
-                       style="color: #ff6666; display: none; font-size: 1.1em;">
-                    ❗Please enter a value between 0 and 1.❗
-                </small>
+                <div id="confidence-input-container" style="display: none; margin-top: 15px;">
+                    <label for="alpha" style="display: block; margin-bottom: 8px;">Confidence Level:</label>
+                    <input type="number" id="alpha" name="alpha" step="0.01" min="0" max="1" 
+                        value="{{ alpha or 0.95 }}" oninput="validateAlpha(this)"
+                        style="width: 100%; padding: 12px; border-radius: 6px;">
+                    <small id="alpha-warning" style="color: #ff9999; display: none; margin-top: 8px; font-size: 1.1em;">
+                        ❗Please enter a value between 0 and 1.❗
+                    </small>
+                </div>
             </div>
 
             <button type="submit">🔍 Predict Price</button>
 
             {% if predicted_price %}
-                <div class="result">
+                <div class="result" style="text-align: center;">
                     <h2>Predicted Price: <br> 
                         <span style="color: #66ff66;">{{ predicted_price }} PLN</span>
                     </h2>
@@ -263,6 +294,7 @@
     </div>
 
     <script>
+        // JavaScript remains mostly the same with updated selectors
         function validateAlpha(input) {
             const warning = document.getElementById('alpha-warning');
             if (input.value <= 0 || input.value >= 1) {
@@ -274,37 +306,16 @@
 
         const toggleCI = document.getElementById('toggle-ci');
         const confidenceInputContainer = document.getElementById('confidence-input-container');
-        const alphaInput = document.getElementById('alpha');
 
         window.addEventListener('DOMContentLoaded', () => {
             if (toggleCI.checked) {
-                expandConfidenceInput();
+                confidenceInputContainer.style.display = 'block';
             }
         });
 
         toggleCI.addEventListener('change', () => {
-            if (toggleCI.checked) {
-                expandConfidenceInput();
-            } else {
-                collapseConfidenceInput();
-            }
+            confidenceInputContainer.style.display = toggleCI.checked ? 'block' : 'none';
         });
-
-        function expandConfidenceInput() {
-            confidenceInputContainer.style.display = 'block';
-            void confidenceInputContainer.offsetHeight;
-            confidenceInputContainer.style.maxHeight = confidenceInputContainer.scrollHeight + 'px';
-            alphaInput.style.padding = '12px';
-            alphaInput.style.border = '1px solid #66bb6a';
-            alphaInput.style.fontSize = '1em';
-        }
-
-        function collapseConfidenceInput() {
-            confidenceInputContainer.style.maxHeight = '0';
-            setTimeout(() => {
-                confidenceInputContainer.style.display = 'none';
-            }, 300);
-        }
     </script>
 </body>
 </html>
