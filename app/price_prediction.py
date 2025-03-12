@@ -13,6 +13,8 @@ from catboost import CatBoostRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 import shap  
 import matplotlib.pyplot as plt  
+import base64
+import io
 import warnings  
 
 warnings.filterwarnings("ignore")
@@ -165,7 +167,13 @@ def plot_shap_waterfall(model, input_data, model_type):
     shap.plots.waterfall(shap_exp, show=False)
     plt.close(fig)  
 
-    return fig
+    buf = io.BytesIO()
+    fig.savefig(buf, format='png', bbox_inches='tight')
+    buf.seek(0)
+    plot_data = base64.b64encode(buf.read()).decode('utf-8')
+    plt.close(fig)
+    
+    return plot_data
 
 
 # PREDICT FUNCTION
