@@ -81,6 +81,8 @@ This project aims to predict house prices in Lublin using various machine learni
 
 ## Installation & Usage
 
+### Run the FastAPI App
+
 1. **Clone the repository**:
     ```bash
     git clone https://github.com/davydantoniuk/lublin-house-price-predict.git
@@ -99,3 +101,24 @@ This project aims to predict house prices in Lublin using various machine learni
     ```
 
 4. Access the app: Open your browser and navigate to `http://127.0.0.1:8000`
+
+### Build the Docker Image
+
+1. **Clone the repository**:
+    ```bash
+    git clone https://github.com/davydantoniuk/lublin-house-price-predict.git
+    cd lublin-house-price-predict/app
+    ```
+2. **Build the Docker image**:
+
+    ```bash
+    docker build -t lublin-house-price-predict .
+    ```
+
+3. **Run the Docker container**:
+
+    ```bash
+    docker run -p 80:80 lublin-house-price-predict .
+    ```
+
+4. Access the app: Open your browser and navigate to `http://localhost:80`
