@@ -1,46 +1,90 @@
 # 🏠 Lublin House Price Prediction
 
-This repository contains an end-to-end project focused on predicting house prices in Lublin, Poland, using advanced machine learning (ML) and deep learning (DL) techniques. The project includes web scraping, data preprocessing, feature engineering, model development, and deployment of a prediction application.
+https://davydantoniuk.github.io/lublin-house-price-predict/
 
-## Project Highlights
+This project aims to predict house prices in Lublin using various machine learning and deep learning models. The dataset includes property listings from [Otodom](https://www.otodom.pl/pl/wyniki/sprzedaz/mieszkanie/lubelskie/lublin/lublin/lublin?viewType=listing&page=) web page.
 
--   **Data Collection**:
-    -   Scraped house sale advertisements from [Otodom](https://otodom.pl) to create a rich dataset.
--   **Data Analysis & Visualization**:
-    -   Performed exploratory data analysis (EDA) to uncover insights about house prices.
-    -   Created visualizations to summarize key findings.
--   **Feature Engineering**:
-    -   Engineered new features to enhance the dataset's predictive capabilities, improving model performance.
--   **Model Development & Comparison**:
-    -   Built and evaluated multiple machine learning (ML) models (e.g., CatBoost, XGBoost, Random Forest) and deep learning (DL) models.
-    -   Compared model results to identify the best-performing model.
--   **Model Optimization**:
-    -   The CatBoost algorithm outperformed others and was selected for final deployment.
-    -   Trained the selected model on the entire dataset for optimal performance, achieving an `R^2` score of 0.9.
--   **Prediction App**:
-    -   Developed a web application using **FastAPI** for real-time house price predictions.
-    -   The app allows users to input house details and instantly receive price predictions.
--   **Comprehensive Documentation**:
+## **Results**
 
-    -   Included a detailed Jupyter Notebook (`price_prediction.ipynb`) that documents every step of the project, from data collection to model deployment.
+-   After comparing various models, the **Random Forest Regressor** and **CatBoost** models showed the best performance and were combined in a stacking model.
+-   The FastAPI app allows easy interaction with the trained model for real-time house price predictions.
 
-    ## Visualizations
+## Visualizations
 
 1. **Model Results Comparison**: A bar plot comparing the performance of all models, showcasing their metrics.
    ![Bar Plot of Model Results](description_images/model_comparison.png)
 
 2. **Prediction Example**:
     - **Input Example**: The last advertisement for sale on otodom.
-      ![Example Ad](description_images/last_house.jpg)
+      ![Example Ad](description_images/image2.jpg)
     - **Predicted Output**: The model's prediction.\
-      ![Predicted vs Actual](description_images/price_predict.jpg)
+      ![Predicted vs Actual](description_images/example_output1.png)
+      ![Predicted vs Actual](description_images/example_output2.png)
+
+## 📁 **Project Structure**
+
+### 1. Introduction
+
+-   Overview of the project goals and objectives.
+
+### 2. Data Collection & Preprocessing
+
+-   Scraped property data and handled issues like:
+    -   Data type conversions
+    -   Duplicate listings
+    -   Missing values with KNN imputation
+    -   One-hot encoding for categorical features
+
+### 3. Exploratory Data Analysis (EDA)
+
+-   Performed detailed analysis on:
+    -   Price and area distribution
+    -   Price per sqm
+    -   Floor and regional analysis
+    -   Temporal trends and property characteristics
+
+### 4. Feature Engineering & Data Preparation
+
+-   Transformed key features:
+    -   Floor and regional-based transformation
+    -   Outlier detection and handling
+    -   Train-test-validation split
+
+### 5. Machine Learning Models
+
+-   Compared various ML models:
+    -   Linear Regression, Elastic Net, Decision Trees, Random Forest, Gradient Boosting, XGBoost, LightGBM, CatBoost
+    -   Built a stacking model for better performance
+
+### 6. Deep Learning Models
+
+-   Developed deep learning models:
+    -   Feedforward Neural Network
+    -   Convolutional Neural Network
+
+### 7. Model Comparison and Interpretation
+
+-   Compared performance metrics of all models
+-   Analyzed feature importance
+-   Investigated worst predictions
+
+### 8. Final Model & Predictions
+
+-   Saved the best-performing model
+-   Made predictions on new data
+
+### 9. FastAPI App
+
+-   Developed a FastAPI-based web application to:
+    -   Serve the best model
+    -   Provide real-time predictions
 
 ## Installation & Usage
 
 1. **Clone the repository**:
     ```bash
     git clone https://github.com/davydantoniuk/lublin-house-price-predict.git
-    cd lublin-house-price-predict
+    cd lublin-house-price-predict/app
     ```
 2. **Install the required packages**:
 
@@ -51,8 +95,7 @@ This repository contains an end-to-end project focused on predicting house price
 3. **Run the FastAPI app**:
 
     ```bash
-    cd app
-    uvicorn price_predict:app --reload
+    uvicorn app:app --reload
     ```
 
 4. Access the app: Open your browser and navigate to `http://127.0.0.1:8000`
