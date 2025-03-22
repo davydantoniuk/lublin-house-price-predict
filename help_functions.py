@@ -451,6 +451,21 @@ def create_dataloaders(X_train, y_train, X_val, y_val, batch_size, cnn_input=Fal
     
     return train_loader, val_loader, input_size
 
+# Create test DataLoader
+def create_test_loader(X_test, y_test, batch_size, cnn_input=False):
+    # Convert to tensors (handle both DataFrame and Series input)
+    X_test_tensor = torch.tensor(X_test.values if hasattr(X_test, 'values') else np.array(X_test), dtype=torch.float32)
+    y_test_tensor = torch.tensor(y_test.values if hasattr(y_test, 'values') else np.array(y_test), dtype=torch.float32).view(-1, 1)
+    
+    # Reshape for CNN if needed
+    if cnn_input:
+        X_test_tensor = X_test_tensor.view(X_test_tensor.shape[0], 1, -1)
+    
+    test_dataset = TensorDataset(X_test_tensor, y_test_tensor)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
+    
+    return test_loader
+
 # Define FNN Model 
 class HousePriceFNN(nn.Module):
     def __init__(self, input_size):
