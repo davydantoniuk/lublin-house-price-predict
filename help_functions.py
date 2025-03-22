@@ -364,6 +364,34 @@ def prepare_data_for_stacking(X_tree, y_tree, use_combined_train_val=False, mode
     # Winsorization
     X_train['Year'], year_lower, year_upper = winsorize_series(X_train['Year'])
     X_test['Year'] = X_test['Year'].clip(lower=year_lower, upper=year_upper).astype(X_test['Year'].dtype)
+    
+    # KNN Imputation - Model performed better without imputation
+    # floor_mapping = {
+    # 'parter': 0,
+    # '1 piętro': 1,
+    # '2 piętro': 2,
+    # '3 piętro': 3,
+    # '4 piętro': 4,
+    # '5+ piętro': 5,  
+    # np.nan: np.nan  # Keep NaNs for imputation
+    # }
+    
+    # X_train['Floor'] = X_train['Floor'].map(floor_mapping)
+    # X_test['Floor'] = X_test['Floor'].map(floor_mapping)
+
+    # knn_imputer = KNNImputer(n_neighbors=5) # With 5 neighbors model performed the best
+    
+    # num_cols = ['Area', 'Elevator', 'Year', 'Rooms', 'Floor']
+    # X_train[num_cols] = knn_imputer.fit_transform(X_train[num_cols])
+    # X_test[num_cols] = knn_imputer.transform(X_test[num_cols])
+
+    # X_train['Floor'] = np.round(X_train['Floor']).astype(int)
+    # X_test['Floor'] = np.round(X_test['Floor']).astype(int)
+
+    # reverse_floor_mapping = {v: k for k, v in floor_mapping.items()}
+    
+    # X_train['Floor'] = X_train['Floor'].map(reverse_floor_mapping)
+    # X_test['Floor'] = X_test['Floor'].map(reverse_floor_mapping)
 
     # === 3. Prepare Data for Each Model ===
     data_dict = {}
